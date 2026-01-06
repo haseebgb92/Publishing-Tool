@@ -40,7 +40,11 @@ export default function BookEditor({ initialData }: EditorProps) {
             headingAlign: 'center',
             arabicFont: 'Scheherazade New',
             urduFont: 'Noto Nastaliq Urdu',
-            englishFont: 'Inter'
+            englishFont: 'Inter',
+            arabicLineHeight: 1.6,
+            urduLineHeight: 1.6,
+            englishLineHeight: 1.4,
+            headingLineHeight: 1.4
         },
         sectionTitleOffset: 0,
         pageBackgroundImage: '/bg-page.jpg',
@@ -557,14 +561,14 @@ export default function BookEditor({ initialData }: EditorProps) {
     const activeItem = selectedItem ? pages.find(p => p.id === selectedItem.pageId)?.items[selectedItem.itemIdx] : null;
 
     // --- Helper Components ---
-    const StyleSlider = ({ label, value, onChange, isGlobal = false }: { label: string, value: number, onChange: (v: number) => void, isGlobal?: boolean }) => (
+    const StyleSlider = ({ label, value, onChange, min = 0.5, max = 3.0, step = 0.1, unit = 'rem', isGlobal = false }: { label: string, value: number, onChange: (v: number) => void, min?: number, max?: number, step?: number, unit?: string, isGlobal?: boolean }) => (
         <div className="mb-3">
             <div className="flex justify-between mb-1">
                 <label className="text-xs font-medium text-gray-600 uppercase">{label}</label>
-                <span className="text-xs text-blue-500">{value.toFixed(1)}rem</span>
+                <span className="text-xs text-blue-500">{value.toFixed(2)}{unit}</span>
             </div>
             <input
-                type="range" min="0.5" max="3.0" step="0.1"
+                type="range" min={min} max={max} step={step}
                 value={value}
                 onChange={(e) => onChange(parseFloat(e.target.value))}
                 className={clsx("w-full cursor-pointer", isGlobal ? "accent-blue-600" : "accent-purple-600")}
@@ -630,13 +634,22 @@ export default function BookEditor({ initialData }: EditorProps) {
                                             <div className="space-y-4">
                                                 {/* Font Size */}
                                                 {(selectedItem.subField.includes('arabic') || selectedItem.subField.includes('name')) && (
-                                                    <StyleSlider label="Arabic Size" value={activeItem.styles?.arabicSize || settings.globalStyles.arabicSize} onChange={(v) => updateItem('arabicSize', v, true)} />
+                                                    <>
+                                                        <StyleSlider label="Arabic Size" value={activeItem.styles?.arabicSize || settings.globalStyles.arabicSize} onChange={(v) => updateItem('arabicSize', v, true)} />
+                                                        <StyleSlider label="Arabic Spacing" min={1.0} max={4.0} unit="" value={activeItem.styles?.arabicLineHeight || settings.globalStyles.arabicLineHeight} onChange={(v) => updateItem('arabicLineHeight', v, true)} />
+                                                    </>
                                                 )}
                                                 {(selectedItem.subField.includes('urdu') || selectedItem.subField.includes('heading')) && (
-                                                    <StyleSlider label="Urdu/Heading Size" value={activeItem.styles?.urduSize || settings.globalStyles.urduSize} onChange={(v) => updateItem('urduSize', v, true)} />
+                                                    <>
+                                                        <StyleSlider label="Urdu/Heading Size" value={activeItem.styles?.urduSize || settings.globalStyles.urduSize} onChange={(v) => updateItem('urduSize', v, true)} />
+                                                        <StyleSlider label="Urdu Spacing" min={1.0} max={4.0} unit="" value={activeItem.styles?.urduLineHeight || settings.globalStyles.urduLineHeight} onChange={(v) => updateItem('urduLineHeight', v, true)} />
+                                                    </>
                                                 )}
                                                 {(selectedItem.subField.includes('english') || selectedItem.subField.includes('roman')) && (
-                                                    <StyleSlider label="English Size" value={activeItem.styles?.englishSize || settings.globalStyles.englishSize} onChange={(v) => updateItem('englishSize', v, true)} />
+                                                    <>
+                                                        <StyleSlider label="English Size" value={activeItem.styles?.englishSize || settings.globalStyles.englishSize} onChange={(v) => updateItem('englishSize', v, true)} />
+                                                        <StyleSlider label="English Spacing" min={1.0} max={4.0} unit="" value={activeItem.styles?.englishLineHeight || settings.globalStyles.englishLineHeight} onChange={(v) => updateItem('englishLineHeight', v, true)} />
+                                                    </>
                                                 )}
 
                                                 <div className="h-px bg-purple-200/50 my-2"></div>
@@ -806,6 +819,25 @@ export default function BookEditor({ initialData }: EditorProps) {
                                         label="Base Heading Size" isGlobal
                                         value={settings.globalStyles.headingSize}
                                         onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, headingSize: v } })}
+                                    />
+
+                                    <div className="h-px bg-gray-100 my-4"></div>
+                                    <h4 className="text-[10px] font-bold text-blue-400 uppercase mb-3">Line Spacing (Universal)</h4>
+
+                                    <StyleSlider
+                                        label="Arabic Line Height" isGlobal min={1.0} max={4.0} unit=""
+                                        value={settings.globalStyles.arabicLineHeight}
+                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, arabicLineHeight: v } })}
+                                    />
+                                    <StyleSlider
+                                        label="Urdu Line Height" isGlobal min={1.0} max={4.0} unit=""
+                                        value={settings.globalStyles.urduLineHeight}
+                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, urduLineHeight: v } })}
+                                    />
+                                    <StyleSlider
+                                        label="English Line Height" isGlobal min={1.0} max={4.0} unit=""
+                                        value={settings.globalStyles.englishLineHeight}
+                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, englishLineHeight: v } })}
                                     />
 
                                     <div className="pt-2 border-t mt-2">

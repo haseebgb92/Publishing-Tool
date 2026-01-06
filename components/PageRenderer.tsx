@@ -188,11 +188,16 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
     const urduFont = getStyleVal('urduFont', 'Noto Nastaliq Urdu');
     const englishFont = getStyleVal('englishFont', 'Inter');
 
+    const arabicLineHeight = getStyleVal('arabicLineHeight', 1.5);
+    const urduLineHeight = getStyleVal('urduLineHeight', 1.5);
+    const englishLineHeight = getStyleVal('englishLineHeight', 1.4);
+    const headingLineHeight = getStyleVal('headingLineHeight', 1.4);
+
     const styles = {
-        arabic: { fontSize: arabicSize, textAlign: arabicAlign, fontFamily: arabicFont },
-        urdu: { fontSize: urduSize, textAlign: urduAlign, fontFamily: urduFont, direction: 'rtl' as 'rtl' },
-        english: { fontSize: englishSize, textAlign: englishAlign, fontFamily: englishFont, direction: 'ltr' as 'ltr' },
-        heading: { fontSize: headingSize, textAlign: headingAlign, fontFamily: urduFont }
+        arabic: { fontSize: arabicSize, textAlign: arabicAlign, fontFamily: arabicFont, lineHeight: arabicLineHeight },
+        urdu: { fontSize: urduSize, textAlign: urduAlign, fontFamily: urduFont, direction: 'rtl' as 'rtl', lineHeight: urduLineHeight },
+        english: { fontSize: englishSize, textAlign: englishAlign, fontFamily: englishFont, direction: 'ltr' as 'ltr', lineHeight: englishLineHeight },
+        heading: { fontSize: headingSize, textAlign: headingAlign, fontFamily: urduFont, direction: 'rtl' as 'rtl', lineHeight: headingLineHeight }
     };
 
     if (item.type === 'toc_entry') {
@@ -217,6 +222,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                     className={clsx("section-title-urdu transition-colors rounded", selectedSubField === 'heading_urdu' && "bg-yellow-100 ring-2 ring-yellow-400")}
                     style={{ ...styles.heading, fontSize: `calc(${headingSize} * 1.5)` }}
                     onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('heading_urdu'); }}
+                    dir="rtl"
                 >
                     {item.heading_urdu || item.arabic || 'Section'}
                 </div>
@@ -241,6 +247,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                             className={clsx("heading-urdu rounded px-1", selectedSubField === 'heading_urdu' && "bg-yellow-100 ring-2 ring-yellow-400 z-20")}
                             style={styles.heading}
                             onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('heading_urdu'); }}
+                            dir="rtl"
                         >
                             {item.heading_urdu}
                         </div>
@@ -292,7 +299,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                         >
                             <div
                                 className={clsx("arabic-text !m-0 !p-0 !text-3xl font-bold rounded px-1 transition-all", selectedSubField === arabicKey && "bg-yellow-100 ring-2 ring-yellow-400 z-30")}
-                                style={{ ...styles.arabic, fontSize: `calc(${arabicSize} * 0.96)`, textAlign: 'center' }}
+                                style={{ ...styles.arabic, fontSize: arabicSize, textAlign: 'center' }}
                                 onDoubleClick={(e) => { e.stopPropagation(); handleSubClick(arabicKey); }}
                             >
                                 {name.arabic}
@@ -306,7 +313,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                             </div>
                             <div
                                 className={clsx("urdu-text !m-0 !text-base font-bold rounded px-1 transition-all", selectedSubField === urduKey && "bg-yellow-100 ring-2 ring-yellow-400 z-30")}
-                                style={{ ...styles.urdu, fontSize: `calc(${urduSize} * 0.8)`, textAlign: 'center' }}
+                                style={{ ...styles.urdu, fontSize: urduSize, textAlign: 'center' }}
                                 onDoubleClick={(e) => { e.stopPropagation(); handleSubClick(urduKey); }}
                             >
                                 {name.urdu}

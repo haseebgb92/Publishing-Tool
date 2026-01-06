@@ -59,6 +59,12 @@ export interface BookItem {
         arabicFont?: string;
         urduFont?: string;
         englishFont?: string;
+
+        // Line Heights
+        arabicLineHeight?: number;
+        urduLineHeight?: number;
+        englishLineHeight?: number;
+        headingLineHeight?: number;
     }
 }
 
@@ -100,6 +106,12 @@ export interface BookSettings {
         arabicFont: string;
         urduFont: string;
         englishFont: string;
+
+        // Line Heights
+        arabicLineHeight: number;
+        urduLineHeight: number;
+        englishLineHeight: number;
+        headingLineHeight: number;
     };
     sectionTitleOffset: number;
     // Assets
