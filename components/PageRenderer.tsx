@@ -285,20 +285,49 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                 {item.names.map((name, idx) => {
                     const fieldKey = `name-${idx}`;
+                    const isNameSelected = selectedSubField === fieldKey;
+                    const arabicKey = `${fieldKey}-arabic`;
+                    const romanKey = `${fieldKey}-roman`;
+                    const urduKey = `${fieldKey}-urdu`;
+                    const englishKey = `${fieldKey}-english`;
+
                     return (
                         <div
                             key={idx}
                             className={clsx(
                                 "asma-item p-4 border rounded-xl shadow-sm transition-all",
-                                selectedSubField === fieldKey ? "bg-yellow-50 ring-2 ring-yellow-400 z-20 scale-105" : "bg-gray-50/30 hover:bg-blue-50/50"
+                                isNameSelected ? "bg-yellow-50 ring-2 ring-yellow-400 z-20 scale-105" : "bg-gray-50/30 hover:bg-blue-50/50"
                             )}
-                            onClick={(e) => { e.stopPropagation(); handleSubClick(fieldKey); }} // Single click for now or double? User said "everything individually on double click".
-                            onDoubleClick={(e) => { e.stopPropagation(); handleSubClick(fieldKey); }}
+                            onClick={(e) => { e.stopPropagation(); handleSubClick(fieldKey); }}
                         >
-                            <div className="arabic-text !m-0 !p-0 !text-3xl font-bold" style={{ ...styles.arabic, fontSize: `calc(${arabicSize} * 1.2)`, textAlign: 'center' }}>{name.arabic}</div>
-                            <div className="roman-text !m-0 !text-xs italic" style={{ ...styles.english, textAlign: 'center' }}>{name.roman}</div>
-                            <div className="urdu-text !m-0 !text-base font-bold" style={{ ...styles.urdu, textAlign: 'center' }}>{name.urdu}</div>
-                            <div className="english-text !m-0 !text-xs opacity-70" style={{ ...styles.english, fontSize: `calc(${englishSize} * 0.9)`, textAlign: 'center' }}>{name.english}</div>
+                            <div
+                                className={clsx("arabic-text !m-0 !p-0 !text-3xl font-bold rounded px-1 transition-all", selectedSubField === arabicKey && "bg-yellow-100 ring-2 ring-yellow-400 z-30")}
+                                style={{ ...styles.arabic, fontSize: `calc(${arabicSize} * 1.2)`, textAlign: 'center' }}
+                                onDoubleClick={(e) => { e.stopPropagation(); handleSubClick(arabicKey); }}
+                            >
+                                {name.arabic}
+                            </div>
+                            <div
+                                className={clsx("roman-text !m-0 !text-xs italic rounded px-1 transition-all", selectedSubField === romanKey && "bg-yellow-100 ring-2 ring-yellow-400 z-30")}
+                                style={{ ...styles.english, textAlign: 'center' }}
+                                onDoubleClick={(e) => { e.stopPropagation(); handleSubClick(romanKey); }}
+                            >
+                                {name.roman}
+                            </div>
+                            <div
+                                className={clsx("urdu-text !m-0 !text-base font-bold rounded px-1 transition-all", selectedSubField === urduKey && "bg-yellow-100 ring-2 ring-yellow-400 z-30")}
+                                style={{ ...styles.urdu, textAlign: 'center' }}
+                                onDoubleClick={(e) => { e.stopPropagation(); handleSubClick(urduKey); }}
+                            >
+                                {name.urdu}
+                            </div>
+                            <div
+                                className={clsx("english-text !m-0 !text-xs opacity-70 rounded px-1 transition-all", selectedSubField === englishKey && "bg-yellow-100 ring-2 ring-yellow-400 z-30")}
+                                style={{ ...styles.english, fontSize: `calc(${englishSize} * 0.9)`, textAlign: 'center' }}
+                                onDoubleClick={(e) => { e.stopPropagation(); handleSubClick(englishKey); }}
+                            >
+                                {name.english}
+                            </div>
                         </div>
                     );
                 })}
