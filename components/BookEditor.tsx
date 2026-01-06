@@ -245,7 +245,10 @@ export default function BookEditor({ initialData }: EditorProps) {
 
     const deletePage = () => {
         if (!selectedPageId) return;
-        if (!confirm('Are you sure you want to delete this page? This action cannot be undone.')) return;
+        const pageToDelete = pages.find(p => p.id === selectedPageId);
+        if (!pageToDelete) return;
+
+        if (!confirm(`Are you sure you want to delete page ${pageToDelete.pageNumber}? This action cannot be undone.`)) return;
 
         const pIdx = pages.findIndex(p => p.id === selectedPageId);
         if (pIdx === -1) return;
@@ -265,6 +268,36 @@ export default function BookEditor({ initialData }: EditorProps) {
             setSelectedPageId(renumbered[nextIdx].id);
         } else {
             setSelectedPageId(null);
+        }
+    };
+
+    const deletePageByNumber = (num: number) => {
+        const pageToDelete = pages.find(p => p.pageNumber === num);
+        if (!pageToDelete) {
+            alert(`Page ${num} not found.`);
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete page ${num}? This action cannot be undone.`)) return;
+
+        const newPages = pages.filter(p => p.pageNumber !== num);
+
+        // Renumber
+        const renumbered = newPages.map((p, i) => ({
+            ...p,
+            pageNumber: i + 1
+        }));
+
+        setPages(renumbered);
+        // If the deleted page was selected, clear selection or select another
+        if (selectedPageId === pageToDelete.id) {
+            if (renumbered.length > 0) {
+                const pIdx = pages.findIndex(p => p.id === pageToDelete.id);
+                const nextIdx = Math.min(pIdx, renumbered.length - 1);
+                setSelectedPageId(renumbered[nextIdx].id);
+            } else {
+                setSelectedPageId(null);
+            }
         }
     };
 
@@ -489,15 +522,43 @@ export default function BookEditor({ initialData }: EditorProps) {
                                     ))}
                                 </div>
 
-                                <div className="pt-4 border-t">
+                                <div className="pt-4 border-t space-y-4">
                                     <h3 className="text-sm font-bold text-gray-800 mb-2">Page Actions</h3>
-                                    <button
-                                        onClick={deletePage}
-                                        disabled={!selectedPageId || pages.length === 0}
-                                        className="w-full py-2 bg-red-50 border border-red-200 text-red-600 rounded text-xs font-bold hover:bg-red-100 flex items-center justify-center gap-2"
-                                    >
-                                        <Trash size={14} /> Delete Current Page {selectedPageId && `(${pages.find(p => p.id === selectedPageId)?.pageNumber})`}
-                                    </button>
+
+                                    <div className="space-y-2">
+                                        <button
+                                            onClick={deletePage}
+                                            disabled={!selectedPageId || pages.length === 0}
+                                            className="w-full py-2 bg-red-50 border border-red-200 text-red-600 rounded text-xs font-bold hover:bg-red-100 flex items-center justify-center gap-2"
+                                        >
+                                            <Trash size={14} /> Delete Selected Page {selectedPageId && `(${pages.find(p => p.id === selectedPageId)?.pageNumber})`}
+                                        </button>
+
+                                        <div className="flex gap-2">
+                                            <input
+                                                id="deletePageNum"
+                                                type="number"
+                                                placeholder="Page #"
+                                                className="w-20 text-xs p-1 border rounded"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const num = parseInt((e.target as HTMLInputElement).value);
+                                                        if (num) deletePageByNumber(num);
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    const input = document.getElementById('deletePageNum') as HTMLInputElement;
+                                                    const num = parseInt(input.value);
+                                                    if (num) deletePageByNumber(num);
+                                                }}
+                                                className="flex-1 py-1 px-2 border border-red-200 text-red-600 rounded text-[10px] font-bold hover:bg-red-50"
+                                            >
+                                                Delete Page By #
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -559,8 +620,22 @@ export default function BookEditor({ initialData }: EditorProps) {
                         className="relative group print-page-wrapper"
                         onClick={() => setSelectedPageId(page.id)}
                     >
-                        <div className="absolute top-2 -left-10 text-gray-400 font-mono text-sm no-print opacity-50">
-                            {page.pageNumber}
+                        <div className="absolute top-2 -left-12 flex flex-col items-center gap-2 no-print group">
+                            <div className="text-gray-400 font-mono text-sm opacity-50">
+                                {page.pageNumber}
+                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPageId(page.id);
+                                    // Small delay to ensure state update if needed, but deletePage handles confirm
+                                    setTimeout(deletePage, 10);
+                                }}
+                                className="p-2 bg-white border border-gray-200 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
+                                title="Delete Page"
+                            >
+                                <Trash size={14} />
+                            </button>
                         </div>
 
                         <PageRenderer

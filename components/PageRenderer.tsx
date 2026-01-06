@@ -235,6 +235,21 @@ function renderItem(item: BookItem, settings: BookSettings) {
         );
     }
 
+    if (item.names && Array.isArray(item.names)) {
+        return (
+            <div className="grid grid-cols-2 gap-4">
+                {item.names.map((name, idx) => (
+                    <div key={idx} className="p-3 border rounded-lg bg-gray-50/50 text-center">
+                        <div className="arabic-text !m-0 !p-0 !text-2xl" style={{ fontSize: arabicSize }}>{name.arabic}</div>
+                        <div className="roman-text !m-0 !text-xs italic" style={{ fontSize: englishSize }}>{name.roman}</div>
+                        <div className="urdu-text !m-0 !text-sm !text-center" style={{ fontSize: urduSize }}>{name.urdu}</div>
+                        <div className="english-text !m-0 !text-[10px] !text-center" style={{ fontSize: `calc(${englishSize} * 0.8)` }}>{name.english}</div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
     return (
         <div className="content-item mb-4">
             {item.arabic && <div className="arabic-text" style={{ fontSize: arabicSize }}>{item.arabic}</div>}
