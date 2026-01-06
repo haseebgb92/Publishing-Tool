@@ -54,9 +54,18 @@ export default function BookEditor({ initialData }: EditorProps) {
         }
     }, [initialData]);
 
-    const loadBookData = (data: any[]) => {
-        const loadedPages = data.map((p, idx) => {
-            const pageId = `page-${idx}`;
+    const loadBookData = (data: any) => {
+        let itemsToLoad = data;
+        let loadedSettings: BookSettings | null = null;
+
+        // Detect if loading a full project file { pages, settings }
+        if (data && !Array.isArray(data) && data.pages) {
+            itemsToLoad = data.pages;
+            if (data.settings) loadedSettings = data.settings;
+        }
+
+        const loadedPages = (Array.isArray(itemsToLoad) ? itemsToLoad : []).map((p: any, idx: number) => {
+            const pageId = p.id || `page-${idx}`;
             let items = p.items || [];
 
             if (p.type === 'table_of_contents' && p.entries) {
@@ -65,7 +74,7 @@ export default function BookEditor({ initialData }: EditorProps) {
                     urdu: e.topic || e.section,
                     english: e.topic_english,
                     toc_page: e.page,
-                    id: `toc-${Math.random().toString(36).substr(2, 9)}`
+                    id: e.id || `toc-${Math.random().toString(36).substr(2, 9)}`
                 }));
             }
 
@@ -97,13 +106,14 @@ export default function BookEditor({ initialData }: EditorProps) {
 
             return {
                 id: pageId,
-                pageNumber: p.book_page_number || idx + 1,
+                pageNumber: p.pageNumber || p.book_page_number || idx + 1,
                 // We keep sectionTitle for reference but the item will do the rendering
-                sectionTitle: p.section,
+                sectionTitle: p.sectionTitle || p.section,
                 items: processedItems
             };
         });
         setPages(loadedPages);
+        if (loadedSettings) setSettings(loadedSettings);
         if (loadedPages.length > 0) setSelectedPageId(loadedPages[0].id);
     };
 
@@ -894,7 +904,7 @@ export default function BookEditor({ initialData }: EditorProps) {
                         <Download size={16} /> Export PDF
                     </button>
                     <button onClick={() => {
-                        const blob = new Blob([JSON.stringify(pages, null, 2)], { type: 'application/json' });
+                        const blob = new Blob([JSON.stringify({ pages, settings }, null, 2)], { type: 'application/json' });
                         saveAs(blob, 'book_progress.json');
                     }} className="w-full py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded shadow-sm text-sm font-medium flex items-center justify-center gap-2 transition-transform active:scale-95">
                         <Save size={16} /> Save Progress (JSON)
