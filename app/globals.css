@@ -139,6 +139,9 @@
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
+  min-height: 240px;
+  gap: 10px;
+  padding: 30px 20px !important;
 }
 
 .asma-item * {
