@@ -181,8 +181,24 @@ export default function BookEditor({ initialData }: EditorProps) {
         let itemToKeep: BookItem | null = null;
 
         if (selectedItem.subField) {
-            // Handle Asma-ul-Husna name split
-            if (selectedItem.subField.startsWith('name-') && originalItem.names) {
+            // Handle Asma-ul-Husna individual field split (e.g., name-0-arabic, name-1-urdu)
+            if (selectedItem.subField.includes('name-') && selectedItem.subField.split('-').length === 3 && originalItem.names) {
+                const parts = selectedItem.subField.split('-');
+                const nameIdx = parseInt(parts[1]);
+                const fieldType = parts[2]; // 'arabic', 'roman', 'urdu', or 'english'
+
+                // For Asma names with sub-fields, we split at the name level, not the field level
+                // This maintains the structure while allowing the name to move
+                const keepNames = direction === 1 ? originalItem.names.slice(0, nameIdx) : originalItem.names.slice(nameIdx + 1);
+                const moveNames = direction === 1 ? originalItem.names.slice(nameIdx) : originalItem.names.slice(0, nameIdx + 1);
+
+                if (keepNames.length > 0 && moveNames.length > 0) {
+                    itemToKeep = { ...originalItem, names: keepNames };
+                    itemToMove = { ...originalItem, id: `split-asma-${Date.now()}`, names: moveNames };
+                }
+            }
+            // Handle Asma-ul-Husna whole name split (e.g., name-0, name-1)
+            else if (selectedItem.subField.startsWith('name-') && !selectedItem.subField.includes('-', 5) && originalItem.names) {
                 const nameIdx = parseInt(selectedItem.subField.split('-')[1]);
                 const keepNames = direction === 1 ? originalItem.names.slice(0, nameIdx) : originalItem.names.slice(nameIdx + 1);
                 const moveNames = direction === 1 ? originalItem.names.slice(nameIdx) : originalItem.names.slice(0, nameIdx + 1);
@@ -192,11 +208,17 @@ export default function BookEditor({ initialData }: EditorProps) {
                     itemToMove = { ...originalItem, id: `split-asma-${Date.now()}`, names: moveNames };
                 }
             } else {
-                const fieldOrder = ['heading', 'arabic', 'roman', 'urdu', 'content_urdu', 'english', 'content_english'];
+                const fieldOrder = ['heading_urdu', 'heading_english', 'arabic', 'roman', 'urdu', 'content_urdu', 'english', 'content_english'];
 
-                // Map actual key to fieldOrder group
+                // Map actual key to fieldOrder - handle both exact matches and grouped fields
                 const getFieldGroup = (key: string) => {
-                    if (key.includes('heading')) return 'heading';
+                    // Direct match first
+                    if (fieldOrder.includes(key)) return key;
+                    // Handle heading variants
+                    if (key.includes('heading')) {
+                        if (key.includes('english')) return 'heading_english';
+                        return 'heading_urdu';
+                    }
                     return key;
                 };
 
