@@ -1,26 +1,220 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Color Palette - Premium Islamic Theme */
+  --primary-deep: #1a3c40;
+  --primary-light: #2d5a5e;
+  --gold-accent: #c6a664;
+  --gold-bright: #e6c875;
+  --bg-warm: #fdfbf7;
+  --text-main: #2b2b2b;
+  --text-light: #555;
+
+  /* Typography */
+  --font-arabic: 'Amiri', serif;
+  --font-urdu: 'Gulzar', serif;
+  --font-english-head: 'Playfair Display', serif;
+  --font-english-body: 'Inter', sans-serif;
+
+  --shadow-book: 0 0 20px rgba(0, 0, 0, 0.1), 0 0 5px rgba(0, 0, 0, 0.05);
+
+  --page-width: 210mm;
+  --page-height: 297mm;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-gray-100 text-gray-900;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Print Specifics */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body,
+  .print-container {
+    background: white;
+    width: 210mm;
+    height: 297mm;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+}
+
+/* Editor Canvas Styles */
+.book-page-canvas {
+  width: var(--page-width);
+  height: var(--page-height);
+  background: white;
+  position: relative;
+  overflow: hidden;
+  transform-origin: top center;
+  margin: 0 auto;
+  box-shadow: var(--shadow-book);
+  /* Padding matches CSS: 40px top, 50px sides, 60px bottom */
+  padding: 40px 50px 60px;
+}
+
+/* --- Book Item Styles (Ported) --- */
+
+.arabic-text {
+  font-family: var(--font-arabic);
+  font-size: 1.2rem;
+  line-height: 2.0;
+  text-align: center;
+  direction: rtl;
+  color: black;
+  margin: 15px 0 20px 0;
+  padding: 10px 20px;
+  position: relative;
+}
+
+.arabic-text::before,
+.arabic-text::after {
+  content: "۞";
+  color: var(--gold-accent);
+  margin: 0 8px;
+}
+
+.urdu-text {
+  font-family: var(--font-urdu);
+  font-size: 0.9rem;
+  line-height: 2.0;
+  text-align: right;
+  direction: rtl;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.english-text {
+  font-family: var(--font-english-body);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  text-align: justify;
+  color: #444;
+}
+
+.roman-text {
+  font-family: var(--font-english-body);
+  font-style: italic;
+  font-size: 0.8rem;
+  color: #666;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+/* Headings */
+.heading-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+  padding: 15px;
+  background: rgba(198, 166, 100, 0.1);
+  border: 1px solid rgba(198, 166, 100, 0.3);
+  border-radius: 8px;
+}
+
+.heading-urdu {
+  font-family: var(--font-urdu);
+  font-size: 1.2rem;
+  color: var(--primary-deep);
+  text-align: center;
+}
+
+.heading-english {
+  font-family: var(--font-english-head);
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+
+/* Section Header */
+.section-title-box {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--gold-accent);
+}
+
+.section-title-urdu {
+  font-family: var(--font-urdu);
+  font-size: 1.8rem;
+  color: var(--primary-deep);
+}
+
+.section-title-english {
+  font-family: var(--font-english-head);
+  font-size: 1.1rem;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/* Decorations */
+.corner-ornament {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-top: 2px solid var(--gold-accent);
+  border-left: 2px solid var(--gold-accent);
+  z-index: 10;
+}
+
+.corner-tl {
+  top: 15px;
+  left: 15px;
+}
+
+.corner-tr {
+  top: 15px;
+  right: 15px;
+  transform: scaleX(-1);
+}
+
+.corner-bl {
+  bottom: 15px;
+  left: 15px;
+  transform: scaleY(-1);
+}
+
+.corner-br {
+  bottom: 15px;
+  right: 15px;
+  transform: scale(-1);
+}
+
+.decorative-border {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+  border: 2px solid var(--gold-accent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.page-number-block {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-english-head);
+  font-size: 0.85rem;
+  background: white;
+  padding: 0 10px;
+  z-index: 20;
 }
