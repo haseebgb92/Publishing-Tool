@@ -36,21 +36,31 @@ export interface BookItem {
     virtue_urdu?: string;
     virtue_english?: string;
     names?: { arabic: string; roman: string; english: string }[];
-    // Editor meta (transient)
+    // Editor - Unique ID for stable keys
     id?: string;
+    // Individual Style Overrides (Delta from global)
+    // If undefined, follows global. If set, overrides.
+    styles?: {
+        arabicSize?: number; // e.g. 1.2
+        urduSize?: number;
+        englishSize?: number;
+        headingSize?: number;
+    }
 }
 
 export interface BookPage {
-    id: string; // UUID for internal tracking
+    id: string;
     pageNumber: number;
-    sectionTitle?: string; // If this page starts a section
+    sectionTitle?: string;
     items: BookItem[];
+    // Page specific override?
+    background?: string;
 }
 
 export interface BookSettings {
     pageSize: {
-        width: number; // mm
-        height: number; // mm
+        width: number;
+        height: number;
         name: string;
     };
     margins: {
@@ -59,6 +69,15 @@ export interface BookSettings {
         left: number;
         right: number;
     };
-    fontScale: number;
+    // Global Typography Defaults
+    globalStyles: {
+        arabicSize: number;
+        urduSize: number;
+        englishSize: number;
+        headingSize: number;
+    };
+    // Assets
+    pageBackgroundImage?: string; // Data URL or Path
+    headingBackgroundImage?: string;
     showOutlines: boolean;
 }

@@ -27,26 +27,38 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
             style={{
                 width: `${settings.pageSize.width}mm`,
                 height: `${settings.pageSize.height}mm`,
-                fontSize: `${settings.fontScale}rem`,
                 paddingTop: `${settings.margins.top}px`,
                 paddingBottom: `${settings.margins.bottom}px`,
                 paddingLeft: `${settings.margins.left}px`,
                 paddingRight: `${settings.margins.right}px`
             }}
         >
-            {/* Ornaments */}
-            <div className="corner-ornament corner-tl"></div>
-            <div className="corner-ornament corner-tr"></div>
-            <div className="corner-ornament corner-bl"></div>
-            <div className="corner-ornament corner-br"></div>
-            <div className="decorative-border"></div>
+            {/* Background Image */}
+            {settings.pageBackgroundImage && (
+                <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                    <img src={settings.pageBackgroundImage} className="w-full h-full object-cover opacity-50" alt="bg" />
+                </div>
+            )}
+
+            {/* Ornaments (Conditional? Or overlapping bg?) Keep for now. */}
+            {!settings.pageBackgroundImage && (
+                <>
+                    <div className="corner-ornament corner-tl"></div>
+                    <div className="corner-ornament corner-tr"></div>
+                    <div className="corner-ornament corner-bl"></div>
+                    <div className="corner-ornament corner-br"></div>
+                    <div className="decorative-border"></div>
+                </>
+            )}
 
             {/* Content Wrapper */}
             <div className="relative z-10 h-full flex flex-col">
-                {/* Section Header if present */}
+                {/* Section Header */}
                 {(page.sectionTitle) && (
                     <div className="section-title-box">
-                        <div className="section-title-urdu">{page.sectionTitle}</div>
+                        <div className="section-title-urdu" style={{ fontSize: `${settings.globalStyles.headingSize * 1.5}rem` }}>
+                            {page.sectionTitle}
+                        </div>
                     </div>
                 )}
 
@@ -60,11 +72,11 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                                 onItemClick?.(idx);
                             }}
                             className={clsx(
-                                "cursor-pointer hover:bg-blue-50 transition-colors rounded p-1 border border-transparent",
-                                selectedItemIdx === idx && "bg-blue-50 border-blue-200"
+                                "cursor-pointer hover:bg-blue-50/50 transition-colors rounded p-1 border border-transparent",
+                                selectedItemIdx === idx && "bg-blue-50/80 border-blue-200"
                             )}
                         >
-                            {renderItem(item)}
+                            {renderItem(item, settings)}
                         </div>
                     ))}
                 </div>
@@ -78,32 +90,51 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
     );
 };
 
-function renderItem(item: BookItem) {
+function renderItem(item: BookItem, settings: BookSettings) {
+    // Compute effective styles (Individual override > Global default)
+    const getStyle = (key: 'arabicSize' | 'urduSize' | 'englishSize' | 'headingSize', baseRem: number) => {
+        // If item has specific override
+        if (item.styles && item.styles[key]) return `${item.styles[key]}rem`;
+        // Else global
+        return `${settings.globalStyles[key] || baseRem}rem`;
+    };
+
+    const arabicSize = getStyle('arabicSize', 1.2);
+    const urduSize = getStyle('urduSize', 1.0);
+    const englishSize = getStyle('englishSize', 0.9);
+    const headingSize = getStyle('headingSize', 1.2);
+
     if (item.type === 'section_title') {
         return (
             <div className="section-title-box mt-4">
-                <div className="section-title-urdu">{item.heading_urdu || item.arabic || 'Section'}</div>
+                <div className="section-title-urdu" style={{ fontSize: headingSize }}>
+                    {item.heading_urdu || item.arabic || 'Section'}
+                </div>
             </div>
         );
     }
 
     if (item.type === 'heading' || item.heading_urdu || item.heading_english) {
+        const bgStyle = settings.headingBackgroundImage
+            ? { backgroundImage: `url(${settings.headingBackgroundImage})`, backgroundSize: 'cover', border: 'none' }
+            : {};
+
         return (
-            <div className="heading-item">
-                {item.heading_urdu && <div className="heading-urdu">{item.heading_urdu}</div>}
-                {item.heading_english && <div className="heading-english">{item.heading_english}</div>}
+            <div className="heading-item" style={bgStyle}>
+                {item.heading_urdu && <div className="heading-urdu" style={{ fontSize: headingSize }}>{item.heading_urdu}</div>}
+                {item.heading_english && <div className="heading-english" style={{ fontSize: `calc(${headingSize} * 0.7)` }}>{item.heading_english}</div>}
             </div>
         );
     }
 
     return (
         <div className="content-item mb-4">
-            {item.arabic && <div className="arabic-text">{item.arabic}</div>}
-            {item.roman && <div className="roman-text">{item.roman}</div>}
-            {item.urdu && <div className="urdu-text">{item.urdu}</div>}
-            {item.content_urdu && !item.urdu && <div className="urdu-text">{item.content_urdu}</div>}
-            {item.english && <div className="english-text">{item.english}</div>}
-            {item.content_english && !item.english && <div className="english-text">{item.content_english}</div>}
+            {item.arabic && <div className="arabic-text" style={{ fontSize: arabicSize }}>{item.arabic}</div>}
+            {item.roman && <div className="roman-text" style={{ fontSize: englishSize }}>{item.roman}</div>}
+            {item.urdu && <div className="urdu-text" style={{ fontSize: urduSize }}>{item.urdu}</div>}
+            {item.content_urdu && !item.urdu && <div className="urdu-text" style={{ fontSize: urduSize }}>{item.content_urdu}</div>}
+            {item.english && <div className="english-text" style={{ fontSize: englishSize }}>{item.english}</div>}
+            {item.content_english && !item.english && <div className="english-text" style={{ fontSize: englishSize }}>{item.content_english}</div>}
         </div>
     );
 }
