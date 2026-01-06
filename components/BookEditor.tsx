@@ -118,7 +118,16 @@ export default function BookEditor({ initialData }: EditorProps) {
             };
         });
         setPages(loadedPages);
-        if (loadedSettings) setSettings(loadedSettings);
+        if (loadedSettings) {
+            setSettings(prev => ({
+                ...prev,
+                ...loadedSettings,
+                globalStyles: {
+                    ...prev.globalStyles,
+                    ...(loadedSettings.globalStyles || {})
+                }
+            }));
+        }
         if (loadedPages.length > 0) setSelectedPageId(loadedPages[0].id);
     };
 
@@ -565,11 +574,11 @@ export default function BookEditor({ initialData }: EditorProps) {
         <div className="mb-3">
             <div className="flex justify-between mb-1">
                 <label className="text-xs font-medium text-gray-600 uppercase">{label}</label>
-                <span className="text-xs text-blue-500">{value.toFixed(2)}{unit}</span>
+                <span className="text-xs text-blue-500">{(value || 0).toFixed(2)}{unit}</span>
             </div>
             <input
                 type="range" min={min} max={max} step={step}
-                value={value}
+                value={value || min}
                 onChange={(e) => onChange(parseFloat(e.target.value))}
                 className={clsx("w-full cursor-pointer", isGlobal ? "accent-blue-600" : "accent-purple-600")}
             />
