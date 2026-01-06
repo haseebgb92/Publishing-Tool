@@ -651,7 +651,7 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                 {(selectedItem.subField.includes('urdu') || selectedItem.subField.includes('heading')) && (
                                                     <>
                                                         <StyleSlider label="Urdu/Heading Size" value={activeItem.styles?.urduSize || settings.globalStyles.urduSize} onChange={(v) => updateItem('urduSize', v, true)} />
-                                                        <StyleSlider label="Urdu Spacing" min={1.0} max={4.0} unit="" value={activeItem.styles?.urduLineHeight || settings.globalStyles.urduLineHeight} onChange={(v) => updateItem('urduLineHeight', v, true)} />
+                                                        <StyleSlider label="Spacing" min={1.0} max={4.0} unit="" value={selectedItem.subField!.includes('heading') ? (activeItem.styles?.headingLineHeight || settings.globalStyles.headingLineHeight) : (activeItem.styles?.urduLineHeight || settings.globalStyles.urduLineHeight)} onChange={(v) => updateItem(selectedItem.subField!.includes('heading') ? 'headingLineHeight' : 'urduLineHeight', v, true)} />
                                                     </>
                                                 )}
                                                 {(selectedItem.subField.includes('english') || selectedItem.subField.includes('roman')) && (
@@ -847,6 +847,11 @@ export default function BookEditor({ initialData }: EditorProps) {
                                         label="English Line Height" isGlobal min={1.0} max={4.0} unit=""
                                         value={settings.globalStyles.englishLineHeight}
                                         onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, englishLineHeight: v } })}
+                                    />
+                                    <StyleSlider
+                                        label="Heading Line Height" isGlobal min={1.0} max={4.0} unit=""
+                                        value={settings.globalStyles.headingLineHeight}
+                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, headingLineHeight: v } })}
                                     />
 
                                     <div className="pt-2 border-t mt-2">
