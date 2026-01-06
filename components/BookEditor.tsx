@@ -9,7 +9,7 @@ import clsx from 'clsx';
 import {
     Download, Upload, Settings, Save, FileJson,
     Image as ImageIcon, Type, LayoutTemplate,
-    RefreshCcw
+    RefreshCcw, ArrowDown, ArrowUp, Trash
 } from 'lucide-react';
 
 interface EditorProps {
@@ -129,6 +129,22 @@ export default function BookEditor({ initialData }: EditorProps) {
         setSelectedPageId(prev.id);
         setSelectedItem({ pageId: prev.id, itemIdx: newPrevItems.length - 1 });
     }, [pages, selectedItem]);
+
+    const deleteItem = () => {
+        if (!selectedItem) return;
+        const pIdx = pages.findIndex(p => p.id === selectedItem.pageId);
+        if (pIdx === -1) return;
+
+        const newPages = [...pages];
+        const newItems = [...newPages[pIdx].items];
+        newItems.splice(selectedItem.itemIdx, 1);
+
+        // If page becomes empty? Keep it or remove?
+        // User might want empty page.
+        newPages[pIdx] = { ...newPages[pIdx], items: newItems };
+        setPages(newPages);
+        setSelectedItem(null); // Deselect
+    };
 
     const updateItem = (field: string, value: any, isStyle = false) => {
         if (!selectedItem) return;

@@ -36,19 +36,8 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
             {/* Background Image */}
             {settings.pageBackgroundImage && (
                 <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                    <img src={settings.pageBackgroundImage} className="w-full h-full object-cover opacity-50" alt="bg" />
+                    <img src={settings.pageBackgroundImage} className="w-full h-full object-cover" alt="bg" />
                 </div>
-            )}
-
-            {/* Ornaments (Conditional? Or overlapping bg?) Keep for now. */}
-            {!settings.pageBackgroundImage && (
-                <>
-                    <div className="corner-ornament corner-tl"></div>
-                    <div className="corner-ornament corner-tr"></div>
-                    <div className="corner-ornament corner-bl"></div>
-                    <div className="corner-ornament corner-br"></div>
-                    <div className="decorative-border"></div>
-                </>
             )}
 
             {/* Content Wrapper */}
@@ -116,11 +105,11 @@ function renderItem(item: BookItem, settings: BookSettings) {
 
     if (item.type === 'heading' || item.heading_urdu || item.heading_english) {
         const bgStyle = settings.headingBackgroundImage
-            ? { backgroundImage: `url(${settings.headingBackgroundImage})`, backgroundSize: 'cover', border: 'none' }
-            : {};
+            ? { backgroundImage: `url(${settings.headingBackgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }
+            : {}; // No default border/bg
 
         return (
-            <div className="heading-item" style={bgStyle}>
+            <div className={clsx("heading-item", !settings.headingBackgroundImage && "border-none bg-transparent")} style={bgStyle}>
                 {item.heading_urdu && <div className="heading-urdu" style={{ fontSize: headingSize }}>{item.heading_urdu}</div>}
                 {item.heading_english && <div className="heading-english" style={{ fontSize: `calc(${headingSize} * 0.7)` }}>{item.heading_english}</div>}
             </div>
