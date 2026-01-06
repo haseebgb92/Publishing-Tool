@@ -209,14 +209,28 @@ function renderItem(item: BookItem, settings: BookSettings) {
     }
 
     if (item.type === 'heading' || item.heading_urdu || item.heading_english) {
-        const bgStyle = settings.headingBackgroundImage
-            ? { backgroundImage: `url(${settings.headingBackgroundImage})`, backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }
+        const hasBgImage = !!settings.headingBackgroundImage;
+        const bgStyle = hasBgImage
+            ? { backgroundImage: `url(${settings.headingBackgroundImage})`, backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', border: 'none', backgroundColor: 'transparent' }
             : {};
 
         return (
-            <div className={clsx("heading-item", !settings.headingBackgroundImage && "border-none bg-transparent")} style={bgStyle}>
-                {item.heading_urdu && <div className="heading-urdu" style={{ fontSize: headingSize }}>{item.heading_urdu}</div>}
-                {item.heading_english && <div className="heading-english" style={{ fontSize: `calc(${headingSize} * 0.7)` }}>{item.heading_english}</div>}
+            <div className="mb-4">
+                <div className={clsx("heading-item mb-2", !hasBgImage && "islamic-heading-banner")} style={bgStyle}>
+                    {item.heading_urdu && <div className="heading-urdu" style={{ fontSize: headingSize }}>{item.heading_urdu}</div>}
+                    {item.heading_english && <div className="heading-english" style={{ fontSize: `calc(${headingSize} * 0.7)` }}>{item.heading_english}</div>}
+                </div>
+                {/* Render other fields if present */}
+                {(item.arabic || item.urdu || item.english || item.roman || item.content_urdu || item.content_english) && (
+                    <div className="mt-2 pl-4 border-l-2 border-gray-100/50">
+                        {item.arabic && <div className="arabic-text" style={{ fontSize: arabicSize }}>{item.arabic}</div>}
+                        {item.roman && <div className="roman-text" style={{ fontSize: englishSize }}>{item.roman}</div>}
+                        {item.urdu && <div className="urdu-text" style={{ fontSize: urduSize }}>{item.urdu}</div>}
+                        {item.content_urdu && !item.urdu && <div className="urdu-text" style={{ fontSize: urduSize }}>{item.content_urdu}</div>}
+                        {item.english && <div className="english-text" style={{ fontSize: englishSize }}>{item.english}</div>}
+                        {item.content_english && !item.english && <div className="english-text" style={{ fontSize: englishSize }}>{item.content_english}</div>}
+                    </div>
+                )}
             </div>
         );
     }

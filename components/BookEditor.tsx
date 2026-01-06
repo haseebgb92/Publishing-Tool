@@ -21,7 +21,7 @@ export default function BookEditor({ initialData }: EditorProps) {
     const [pages, setPages] = useState<BookPage[]>([]);
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<{ pageId: string, itemIdx: number } | null>(null);
-    const [activeTab, setActiveTab] = useState<'layout' | 'typography' | 'content'>('content');
+    const [activeTab, setActiveTab] = useState<'layout' | 'typography' | 'content' | 'assets'>('content');
 
     const [settings, setSettings] = useState<BookSettings>({
         pageSize: { width: 210, height: 297, name: 'A4' },
@@ -33,7 +33,7 @@ export default function BookEditor({ initialData }: EditorProps) {
             headingSize: 1.2
         },
         pageBackgroundImage: '/bg-page.jpg',
-        headingBackgroundImage: '/bg-heading.png',
+        headingBackgroundImage: '',
         showOutlines: true
     });
 
@@ -107,6 +107,55 @@ export default function BookEditor({ initialData }: EditorProps) {
     };
 
     // --- Actions ---
+    /* New Cross-Page Move Logic */
+    const moveActiveItemToPage = (direction: -1 | 1) => {
+        if (!selectedItem) return;
+        const pIdx = pages.findIndex(p => p.id === selectedItem.pageId);
+        if (pIdx === -1) return;
+        if (direction === -1 && pIdx === 0) return; // Cannot move before first page
+
+        // Handle creating page if needed
+        let currentPages = [...pages];
+        let targetPageIdx = pIdx + direction;
+
+        if (direction === 1 && pIdx === pages.length - 1) {
+            const cur = pages[pIdx];
+            const newId = `page-${pages.length}-${Date.now()}`;
+            currentPages.push({ id: newId, pageNumber: cur.pageNumber + 1, items: [], sectionTitle: cur.sectionTitle });
+            targetPageIdx = currentPages.length - 1; // Update targetPageIdx for the newly created page
+        }
+
+        const sourcePage = { ...currentPages[pIdx] };
+        const targetPage = { ...currentPages[targetPageIdx] };
+        const itemToMove = sourcePage.items[selectedItem.itemIdx];
+
+        // Remove from source
+        const newSourceItems = [...sourcePage.items];
+        newSourceItems.splice(selectedItem.itemIdx, 1);
+        sourcePage.items = newSourceItems;
+
+        // Add to target
+        const newTargetItems = [...targetPage.items];
+        if (direction === -1) {
+            // Moving UP to prev page -> Append to end
+            newTargetItems.push(itemToMove);
+        } else {
+            // Moving DOWN to next page -> Prepend to start
+            newTargetItems.unshift(itemToMove);
+        }
+        targetPage.items = newTargetItems;
+
+        currentPages[pIdx] = sourcePage;
+        currentPages[targetPageIdx] = targetPage;
+
+        setPages(currentPages);
+        // Follow item
+        setSelectedItem({
+            pageId: targetPage.id,
+            itemIdx: direction === -1 ? newTargetItems.length - 1 : 0
+        });
+    };
+
     const handlePushToNext = useCallback(() => {
         if (!selectedItem) return;
         const pIdx = pages.findIndex(p => p.id === selectedItem.pageId);
@@ -192,6 +241,31 @@ export default function BookEditor({ initialData }: EditorProps) {
 
         newPages[pIdx].items[selectedItem.itemIdx] = item;
         setPages(newPages);
+    };
+
+    const deletePage = () => {
+        if (!selectedPageId) return;
+        if (!confirm('Are you sure you want to delete this page? This action cannot be undone.')) return;
+
+        const pIdx = pages.findIndex(p => p.id === selectedPageId);
+        if (pIdx === -1) return;
+
+        const newPages = pages.filter(p => p.id !== selectedPageId);
+
+        // Renumber
+        const renumbered = newPages.map((p, i) => ({
+            ...p,
+            pageNumber: i + 1
+        }));
+
+        setPages(renumbered);
+        // Select nearest page
+        if (renumbered.length > 0) {
+            const nextIdx = Math.min(pIdx, renumbered.length - 1);
+            setSelectedPageId(renumbered[nextIdx].id);
+        } else {
+            setSelectedPageId(null);
+        }
     };
 
     // --- Keyboard Shortcuts ---
@@ -315,6 +389,29 @@ export default function BookEditor({ initialData }: EditorProps) {
                                             )
                                         ))}
                                     </div>
+
+                                    <div className="pt-4 border-t border-gray-100">
+                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Item Actions</h4>
+                                        <div className="grid grid-cols-2 gap-2 mb-2">
+                                            <button onClick={() => moveActiveItemToPage(-1)} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700">
+                                                <ArrowUp size={14} /> Move to Prev Page
+                                            </button>
+                                            <button onClick={() => moveActiveItemToPage(1)} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700">
+                                                <ArrowDown size={14} /> Move to Next Page
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <button onClick={handlePushToNext} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex flex-col items-center gap-1 text-gray-400" title="Split Page (Push all below)">
+                                                <ArrowDown size={14} /> Split Page
+                                            </button>
+                                            <button onClick={handlePullToPrev} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex flex-col items-center gap-1 text-gray-400" title="Pull Content">
+                                                <ArrowUp size={14} /> Pull Content
+                                            </button>
+                                            <button onClick={deleteItem} className="py-2 px-1 bg-white border border-red-200 hover:bg-red-50 text-[10px] rounded flex flex-col items-center gap-1 text-red-600">
+                                                <Trash size={14} /> Delete
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="p-8 text-center text-gray-400 border-2 border-dashed rounded-xl">
@@ -358,7 +455,7 @@ export default function BookEditor({ initialData }: EditorProps) {
                         </div>
                     )}
 
-                    {/* --- TAB: LAYOUT & ASSETS --- */}
+                    {/* --- TAB: LAYOUT --- */}
                     {activeTab === 'layout' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
                             <div>
@@ -391,8 +488,24 @@ export default function BookEditor({ initialData }: EditorProps) {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
 
+                                <div className="pt-4 border-t">
+                                    <h3 className="text-sm font-bold text-gray-800 mb-2">Page Actions</h3>
+                                    <button
+                                        onClick={deletePage}
+                                        disabled={!selectedPageId || pages.length === 0}
+                                        className="w-full py-2 bg-red-50 border border-red-200 text-red-600 rounded text-xs font-bold hover:bg-red-100 flex items-center justify-center gap-2"
+                                    >
+                                        <Trash size={14} /> Delete Current Page {selectedPageId && `(${pages.find(p => p.id === selectedPageId)?.pageNumber})`}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- TAB: ASSETS --- */}
+                    {activeTab === 'assets' && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
                             <div className="border-t pt-4">
                                 <h3 className="text-sm font-bold text-gray-800 mb-3">Backgrounds</h3>
 

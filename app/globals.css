@@ -139,6 +139,36 @@
   margin-top: 4px;
 }
 
+/* Heading Banner (CSS Placeholder) */
+.islamic-heading-banner {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 2px solid var(--gold-accent);
+  border-radius: 12px;
+  position: relative;
+  margin: 15px 0;
+  padding: 10px 40px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.islamic-heading-banner::before,
+.islamic-heading-banner::after {
+  content: "❖";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--primary-light);
+  font-size: 1.2rem;
+}
+
+.islamic-heading-banner::before {
+  left: 12px;
+}
+
+.islamic-heading-banner::after {
+  right: 12px;
+}
+
 /* Section Header */
 .section-title-box {
   text-align: center;
