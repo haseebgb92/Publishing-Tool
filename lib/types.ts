@@ -36,6 +36,9 @@ export interface BookItem {
     virtue_urdu?: string;
     virtue_english?: string;
     names?: { arabic: string; roman: string; english: string }[];
+
+    // TOC
+    toc_page?: number;
     // Editor - Unique ID for stable keys
     id?: string;
     // Individual Style Overrides (Delta from global)

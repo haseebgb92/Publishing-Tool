@@ -93,9 +93,23 @@ function renderItem(item: BookItem, settings: BookSettings) {
     const englishSize = getStyle('englishSize', 0.9);
     const headingSize = getStyle('headingSize', 1.2);
 
+    if (item.type === 'toc_entry') {
+        return (
+            <div className="flex items-baseline justify-between py-1 border-b border-gray-300 border-dotted mb-1">
+                <div className="flex-1 text-right">
+                    <span className="font-bold text-lg font-urdu">{item.urdu}</span>
+                    {item.english && <span className="text-xs text-gray-500 ml-2 font-sans">({item.english})</span>}
+                </div>
+                <div className="w-12 text-left text-sm font-mono text-gray-700 pl-2">
+                    {item.toc_page}
+                </div>
+            </div>
+        );
+    }
+
     if (item.type === 'section_title') {
         return (
-            <div className="section-title-box mt-4">
+            <div className="section-title-box mt-4 text-center">
                 <div className="section-title-urdu" style={{ fontSize: headingSize }}>
                     {item.heading_urdu || item.arabic || 'Section'}
                 </div>
@@ -105,8 +119,8 @@ function renderItem(item: BookItem, settings: BookSettings) {
 
     if (item.type === 'heading' || item.heading_urdu || item.heading_english) {
         const bgStyle = settings.headingBackgroundImage
-            ? { backgroundImage: `url(${settings.headingBackgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }
-            : {}; // No default border/bg
+            ? { backgroundImage: `url(${settings.headingBackgroundImage})`, backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }
+            : {};
 
         return (
             <div className={clsx("heading-item", !settings.headingBackgroundImage && "border-none bg-transparent")} style={bgStyle}>

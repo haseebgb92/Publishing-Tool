@@ -32,6 +32,8 @@ export default function BookEditor({ initialData }: EditorProps) {
             englishSize: 0.9,
             headingSize: 1.2
         },
+        pageBackgroundImage: '/bg-page.png',
+        headingBackgroundImage: '/bg-heading.jpg',
         showOutlines: true
     });
 
@@ -43,12 +45,26 @@ export default function BookEditor({ initialData }: EditorProps) {
     }, [initialData]);
 
     const loadBookData = (data: any[]) => {
-        const loadedPages = data.map((p, idx) => ({
-            id: `page-${idx}`,
-            pageNumber: p.book_page_number || idx + 1,
-            sectionTitle: p.section,
-            items: p.items || []
-        }));
+        const loadedPages = data.map((p, idx) => {
+            let items = p.items || [];
+
+            // Transform TOC entries to items if needed
+            if (p.type === 'table_of_contents' && p.entries) {
+                items = p.entries.map((e: any) => ({
+                    type: 'toc_entry',
+                    urdu: e.topic || e.section,
+                    english: e.topic_english,
+                    toc_page: e.page
+                }));
+            }
+
+            return {
+                id: `page-${idx}`,
+                pageNumber: p.book_page_number || idx + 1,
+                sectionTitle: p.section,
+                items: items
+            };
+        });
         setPages(loadedPages);
         if (loadedPages.length > 0) setSelectedPageId(loadedPages[0].id);
     };
