@@ -24,6 +24,7 @@ export default function BookEditor({ initialData }: EditorProps) {
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<{ pageId: string, itemIdx: number, subField?: string } | null>(null);
     const [activeTab, setActiveTab] = useState<'layout' | 'typography' | 'content' | 'assets'>('content');
+    const [isExporting, setIsExporting] = useState(false);
 
     const [settings, setSettings] = useState<BookSettings>({
         pageSize: { width: 210, height: 297, name: 'A4' },
@@ -115,6 +116,98 @@ export default function BookEditor({ initialData }: EditorProps) {
         setPages(loadedPages);
         if (loadedSettings) setSettings(loadedSettings);
         if (loadedPages.length > 0) setSelectedPageId(loadedPages[0].id);
+    };
+
+    const handleExportPDF = async () => {
+        setIsExporting(true);
+        try {
+            // @ts-ignore
+            const { jsPDF } = await import('jspdf');
+            // @ts-ignore
+            const { default: html2canvas } = await import('html2canvas');
+
+            const pageElements = document.querySelectorAll('.print-page-wrapper');
+            if (pageElements.length === 0) {
+                alert('No pages found to export.');
+                setIsExporting(false);
+                return;
+            }
+
+            // Create PDF (A4 Portrait)
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = 210;
+            const pdfHeight = 297;
+
+            console.log(`Starting export for ${pageElements.length} pages...`);
+
+            for (let i = 0; i < pageElements.length; i++) {
+                const pageEl = pageElements[i] as HTMLElement;
+
+                // Create a temporary container for isolated rendering
+                const tempContainer = document.createElement('div');
+                Object.assign(tempContainer.style, {
+                    position: 'fixed',
+                    left: '0',
+                    top: '0',
+                    width: '210mm',
+                    height: '297mm',
+                    zIndex: '-9999',
+                    backgroundColor: 'white',
+                    overflow: 'hidden'
+                });
+                document.body.appendChild(tempContainer);
+
+                // Clone the page element
+                const clone = pageEl.cloneNode(true) as HTMLElement;
+                Object.assign(clone.style, {
+                    margin: '0',
+                    padding: '0',
+                    display: 'block',
+                    width: '210mm',
+                    height: '297mm',
+                    boxShadow: 'none',
+                    transform: 'none'
+                });
+
+                // Hide non-content UI elements in the clone
+                clone.querySelectorAll('.no-print').forEach(el => (el as HTMLElement).style.display = 'none');
+
+                tempContainer.appendChild(clone);
+
+                // Targeting the canvas div inside PageRenderer for more precision if possible
+                const canvasTarget = clone.querySelector('.book-page-canvas') as HTMLElement || clone;
+
+                // Wait for any lazy content (fonts/images) to render
+                await new Promise(r => setTimeout(r, 400));
+
+                const canvas = await html2canvas(canvasTarget, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    width: 794, // Approx 210mm at 96dpi
+                    height: 1123, // Approx 297mm at 96dpi
+                    scrollY: 0,
+                    scrollX: 0,
+                    windowWidth: 794,
+                    windowHeight: 1123
+                });
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+                if (i > 0) pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+
+                document.body.removeChild(tempContainer);
+            }
+
+            pdf.save(`book_export_${Date.now()}.pdf`);
+        } catch (error) {
+            console.error('PDF Export Error:', error);
+            alert('Failed to export PDF. Please check the console for details.');
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     const handleReorder = (pageId: string, newItems: BookItem[]) => {
@@ -854,59 +947,16 @@ export default function BookEditor({ initialData }: EditorProps) {
 
                 {/* Footer Actions */}
                 <div className="p-4 border-t border-gray-200 bg-gray-50 space-y-2">
-                    <button onClick={async () => {
-                        // @ts-ignore
-                        const html2pdf = (await import('html2pdf.js')).default;
-                        const pages = document.querySelectorAll('.print-page-wrapper');
-                        const container = document.createElement('div');
-
-                        // Use fixed position behind content to ensure rendering
-                        // Using 'fixed' and 'top:0' inside viewport prevents culling
-                        container.style.position = 'fixed';
-                        container.style.left = '0';
-                        container.style.top = '0';
-                        container.style.width = '210mm';
-                        container.style.zIndex = '-9999';
-                        container.style.background = 'white'; // Explicit background
-
-                        document.body.appendChild(container);
-
-                        pages.forEach(p => {
-                            const clone = p.cloneNode(true) as HTMLElement;
-                            clone.style.margin = '0';
-                            clone.style.marginBottom = '0';
-                            clone.style.breakAfter = 'page';
-                            clone.style.display = 'block';
-                            clone.style.minHeight = '297mm';
-
-                            const noPrints = clone.querySelectorAll('.no-print');
-                            noPrints.forEach(el => (el as HTMLElement).style.display = 'none');
-
-                            container.appendChild(clone);
-                        });
-
-                        // Wait for rendering
-                        await new Promise(resolve => setTimeout(resolve, 500));
-
-                        const opt: any = {
-                            margin: 0,
-                            filename: 'book_export.pdf',
-                            image: { type: 'jpeg', quality: 0.98 },
-                            html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
-                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                            pagebreak: { mode: ['css', 'legacy'] }
-                        };
-
-                        try {
-                            await html2pdf().set(opt).from(container).save();
-                        } catch (e) {
-                            console.error('PDF Export Error:', e);
-                            alert('Failed to export PDF');
-                        } finally {
-                            document.body.removeChild(container);
-                        }
-                    }} className="w-full py-2 bg-gray-900 hover:bg-black text-white rounded shadow text-sm font-medium flex items-center justify-center gap-2 transition-transform active:scale-95">
-                        <Download size={16} /> Export PDF
+                    <button
+                        onClick={handleExportPDF}
+                        disabled={isExporting}
+                        className={clsx(
+                            "w-full py-2 rounded shadow text-sm font-medium flex items-center justify-center gap-2 transition-transform active:scale-95",
+                            isExporting ? "bg-gray-400 cursor-not-allowed" : "bg-gray-900 hover:bg-black text-white"
+                        )}
+                    >
+                        {isExporting ? <RefreshCcw className="animate-spin" size={16} /> : <Download size={16} />}
+                        {isExporting ? `Exporting (${document.querySelectorAll('.print-page-wrapper').length} pgs)...` : "Export PDF"}
                     </button>
                     <button onClick={() => {
                         const blob = new Blob([JSON.stringify({ pages, settings }, null, 2)], { type: 'application/json' });
