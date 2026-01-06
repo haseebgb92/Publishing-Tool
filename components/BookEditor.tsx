@@ -844,14 +844,60 @@ export default function BookEditor({ initialData }: EditorProps) {
 
                 {/* Footer Actions */}
                 <div className="p-4 border-t border-gray-200 bg-gray-50 space-y-2">
-                    <button onClick={() => window.print()} className="w-full py-2 bg-gray-900 hover:bg-black text-white rounded shadow text-sm font-medium flex items-center justify-center gap-2 transition-transform active:scale-95">
-                        <Download size={16} /> Save as PDF
+                    <button onClick={async () => {
+                        // @ts-ignore
+                        const html2pdf = (await import('html2pdf.js')).default;
+                        const pages = document.querySelectorAll('.print-page-wrapper');
+                        const container = document.createElement('div');
+                        // Hide container but keep it in layout for rendering? 
+                        // html2pdf usually needs it visible or at least rendered.
+                        // Absolute positioning off-screen is safest.
+                        container.style.position = 'absolute';
+                        container.style.left = '-9999px';
+                        container.style.top = '0';
+                        container.style.width = '210mm'; // Force A4 width to ensure consistency
+
+                        pages.forEach(p => {
+                            const clone = p.cloneNode(true) as HTMLElement;
+                            // Ensure no external margins interfere
+                            clone.style.margin = '0';
+                            clone.style.marginBottom = '0';
+                            // Remove any interactive UI elements if cloned (e.g. delete buttons hidden by group-hover)
+                            // But .no-print class handles this in print media. html2canvas uses visuals.
+                            // We should manually hide .no-print elements in the clone
+                            const noPrints = clone.querySelectorAll('.no-print');
+                            noPrints.forEach(el => (el as HTMLElement).style.display = 'none');
+
+                            clone.style.breakAfter = 'page';
+                            container.appendChild(clone);
+                        });
+                        document.body.appendChild(container);
+
+                        const opt = {
+                            margin: 0,
+                            filename: 'book_export.pdf',
+                            image: { type: 'jpeg', quality: 0.98 },
+                            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                            pagebreak: { mode: ['css', 'legacy'] }
+                        };
+
+                        try {
+                            await html2pdf().set(opt).from(container).save();
+                        } catch (e) {
+                            console.error('PDF Export Error:', e);
+                            alert('Failed to export PDF');
+                        } finally {
+                            document.body.removeChild(container);
+                        }
+                    }} className="w-full py-2 bg-gray-900 hover:bg-black text-white rounded shadow text-sm font-medium flex items-center justify-center gap-2 transition-transform active:scale-95">
+                        <Download size={16} /> Export PDF
                     </button>
                     <button onClick={() => {
                         const blob = new Blob([JSON.stringify(pages, null, 2)], { type: 'application/json' });
-                        saveAs(blob, 'book_data_v2.json');
+                        saveAs(blob, 'book_progress.json');
                     }} className="w-full py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded shadow-sm text-sm font-medium flex items-center justify-center gap-2 transition-transform active:scale-95">
-                        <Save size={16} /> Save Project JSON
+                        <Save size={16} /> Save Progress (JSON)
                     </button>
                 </div>
             </div>

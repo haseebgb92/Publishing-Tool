@@ -292,7 +292,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                         >
                             <div
                                 className={clsx("arabic-text !m-0 !p-0 !text-3xl font-bold rounded px-1 transition-all", selectedSubField === arabicKey && "bg-yellow-100 ring-2 ring-yellow-400 z-30")}
-                                style={{ ...styles.arabic, fontSize: `calc(${arabicSize} * 1.2)`, textAlign: 'center' }}
+                                style={{ ...styles.arabic, fontSize: `calc(${arabicSize} * 0.96)`, textAlign: 'center' }}
                                 onDoubleClick={(e) => { e.stopPropagation(); handleSubClick(arabicKey); }}
                             >
                                 {name.arabic}
@@ -306,7 +306,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                             </div>
                             <div
                                 className={clsx("urdu-text !m-0 !text-base font-bold rounded px-1 transition-all", selectedSubField === urduKey && "bg-yellow-100 ring-2 ring-yellow-400 z-30")}
-                                style={{ ...styles.urdu, textAlign: 'center' }}
+                                style={{ ...styles.urdu, fontSize: `calc(${urduSize} * 0.8)`, textAlign: 'center' }}
                                 onDoubleClick={(e) => { e.stopPropagation(); handleSubClick(urduKey); }}
                             >
                                 {name.urdu}
