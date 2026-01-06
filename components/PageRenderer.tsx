@@ -90,12 +90,6 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                     {itemsWithIds.map((item, idx) => (
                         <SortableItemWrapper key={item.id} id={item.id}>
                             <div
-                                onClick={(e) => {
-                                    // prevent drag click? 
-                                    // onItemClick needs to fire. dnd-kit handles click vs drag via activationConstraint.
-                                    e.stopPropagation();
-                                    onItemClick?.(idx);
-                                }}
                                 className={clsx(
                                     "cursor-pointer hover:bg-blue-50/50 transition-colors rounded p-1 border border-transparent group relative",
                                     selectedItemIdx === idx && "bg-blue-50/80 border-blue-200"
@@ -141,10 +135,6 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                     {onReorder ? renderList() : page.items.map((item, idx) => (
                         <div
                             key={idx}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onItemClick?.(idx);
-                            }}
                             className={clsx(
                                 "cursor-pointer hover:bg-blue-50/50 transition-colors rounded p-1 border border-transparent",
                                 selectedItemIdx === idx && "bg-blue-50/80 border-blue-200"
@@ -282,7 +272,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
 
     if (item.names && Array.isArray(item.names)) {
         return (
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-6">
                 {item.names.map((name, idx) => {
                     const fieldKey = `name-${idx}`;
                     const isNameSelected = selectedSubField === fieldKey;
@@ -336,7 +326,18 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
     }
 
     return (
-        <div className="content-item mb-4 space-y-2">
+        <div
+            className="content-item mb-4 space-y-2"
+            onClick={(e) => {
+                // Only trigger if clicking the container itself, not a child field
+                if (e.target === e.currentTarget) {
+                    e.stopPropagation();
+                    if (itemIdx !== undefined && onItemClick) {
+                        onItemClick(itemIdx);
+                    }
+                }
+            }}
+        >
             {item.arabic && <div className={getFieldClass('arabic')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('arabic'); }} style={styles.arabic}>{item.arabic}</div>}
             {item.roman && <div className={getFieldClass('roman')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('roman'); }} style={styles.english}>{item.roman}</div>}
             {item.urdu && <div className={getFieldClass('urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('urdu'); }} style={styles.urdu}>{item.urdu}</div>}
