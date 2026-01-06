@@ -859,35 +859,40 @@ export default function BookEditor({ initialData }: EditorProps) {
                         const html2pdf = (await import('html2pdf.js')).default;
                         const pages = document.querySelectorAll('.print-page-wrapper');
                         const container = document.createElement('div');
-                        // Hide container but keep it in layout for rendering? 
-                        // html2pdf usually needs it visible or at least rendered.
-                        // Absolute positioning off-screen is safest.
-                        container.style.position = 'absolute';
-                        container.style.left = '-9999px';
+
+                        // Use fixed position behind content to ensure rendering
+                        // Using 'fixed' and 'top:0' inside viewport prevents culling
+                        container.style.position = 'fixed';
+                        container.style.left = '0';
                         container.style.top = '0';
-                        container.style.width = '210mm'; // Force A4 width to ensure consistency
+                        container.style.width = '210mm';
+                        container.style.zIndex = '-9999';
+                        container.style.background = 'white'; // Explicit background
+
+                        document.body.appendChild(container);
 
                         pages.forEach(p => {
                             const clone = p.cloneNode(true) as HTMLElement;
-                            // Ensure no external margins interfere
                             clone.style.margin = '0';
                             clone.style.marginBottom = '0';
-                            // Remove any interactive UI elements if cloned (e.g. delete buttons hidden by group-hover)
-                            // But .no-print class handles this in print media. html2canvas uses visuals.
-                            // We should manually hide .no-print elements in the clone
+                            clone.style.breakAfter = 'page';
+                            clone.style.display = 'block';
+                            clone.style.minHeight = '297mm';
+
                             const noPrints = clone.querySelectorAll('.no-print');
                             noPrints.forEach(el => (el as HTMLElement).style.display = 'none');
 
-                            clone.style.breakAfter = 'page';
                             container.appendChild(clone);
                         });
-                        document.body.appendChild(container);
+
+                        // Wait for rendering
+                        await new Promise(resolve => setTimeout(resolve, 500));
 
                         const opt: any = {
                             margin: 0,
                             filename: 'book_export.pdf',
                             image: { type: 'jpeg', quality: 0.98 },
-                            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                            html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
                             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                             pagebreak: { mode: ['css', 'legacy'] }
                         };
