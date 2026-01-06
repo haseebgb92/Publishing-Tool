@@ -52,7 +52,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
     onReorder
 }) => {
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
