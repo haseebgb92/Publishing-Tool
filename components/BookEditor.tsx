@@ -62,6 +62,16 @@ export default function BookEditor({ initialData }: EditorProps) {
 
             // Chunk Asma-ul-Husna and assign IDs
             const processedItems: BookItem[] = [];
+
+            // Convert page section to a movable section_title item
+            if (p.section) {
+                processedItems.push({
+                    type: 'section_title',
+                    heading_urdu: p.section,
+                    id: `${pageId}-section-title`
+                });
+            }
+
             items.forEach((item: any, i: number) => {
                 if (item.type === 'names_of_allah' && item.names && item.names.length > 12) {
                     for (let n = 0; n < item.names.length; n += 12) {
@@ -79,6 +89,7 @@ export default function BookEditor({ initialData }: EditorProps) {
             return {
                 id: pageId,
                 pageNumber: p.book_page_number || idx + 1,
+                // We keep sectionTitle for reference but the item will do the rendering
                 sectionTitle: p.section,
                 items: processedItems
             };
@@ -148,64 +159,69 @@ export default function BookEditor({ initialData }: EditorProps) {
         let itemToKeep: BookItem | null = null;
 
         if (selectedItem.subField) {
-            const fieldOrder = ['heading', 'arabic', 'roman', 'urdu', 'content_urdu', 'english', 'content_english'];
+            // Handle Asma-ul-Husna name split
+            if (selectedItem.subField.startsWith('name-') && originalItem.names) {
+                const nameIdx = parseInt(selectedItem.subField.split('-')[1]);
+                const keepNames = direction === 1 ? originalItem.names.slice(0, nameIdx) : originalItem.names.slice(nameIdx + 1);
+                const moveNames = direction === 1 ? originalItem.names.slice(nameIdx) : originalItem.names.slice(0, nameIdx + 1);
 
-            // Map actual key to fieldOrder group
-            const getFieldGroup = (key: string) => {
-                if (key.includes('heading')) return 'heading';
-                return key;
-            };
+                if (keepNames.length > 0 && moveNames.length > 0) {
+                    itemToKeep = { ...originalItem, names: keepNames };
+                    itemToMove = { ...originalItem, id: `split-asma-${Date.now()}`, names: moveNames };
+                }
+            } else {
+                const fieldOrder = ['heading', 'arabic', 'roman', 'urdu', 'content_urdu', 'english', 'content_english'];
 
-            const selectedGroup = getFieldGroup(selectedItem.subField);
-            const selectedIdx = fieldOrder.indexOf(selectedGroup);
-
-            if (selectedIdx !== -1) {
-                const keep: any = { type: originalItem.type, id: originalItem.id, styles: originalItem.styles ? { ...originalItem.styles } : undefined };
-                const move: any = {
-                    type: originalItem.type === 'heading' ? 'text' : originalItem.type,
-                    id: `split-${Date.now()}`,
-                    styles: originalItem.styles ? { ...originalItem.styles } : undefined
+                // Map actual key to fieldOrder group
+                const getFieldGroup = (key: string) => {
+                    if (key.includes('heading')) return 'heading';
+                    return key;
                 };
 
-                // Determine split point based on direction
-                // Move Down: Start moving FROM selected field
-                // Move Up: Move EVERYTHING UP TO selected field (inclusive)
-                const splitIdx = direction === 1 ? selectedIdx : selectedIdx + 1;
+                const selectedGroup = getFieldGroup(selectedItem.subField);
+                const selectedIdx = fieldOrder.indexOf(selectedGroup);
 
-                let hasMove = false;
-                let hasKeep = false;
+                if (selectedIdx !== -1) {
+                    const keep: any = { type: originalItem.type, id: originalItem.id, styles: originalItem.styles ? { ...originalItem.styles } : undefined };
+                    const move: any = {
+                        type: originalItem.type === 'heading' ? 'text' : originalItem.type,
+                        id: `split-${Date.now()}`,
+                        styles: originalItem.styles ? { ...originalItem.styles } : undefined
+                    };
 
-                Object.keys(originalItem).forEach(key => {
-                    if (['type', 'id', 'styles'].includes(key)) return;
-                    const group = getFieldGroup(key);
-                    const groupIdx = fieldOrder.indexOf(group);
+                    // Determine split point based on direction
+                    const splitIdx = direction === 1 ? selectedIdx : selectedIdx + 1;
 
-                    if (groupIdx === -1) {
-                        // Unknown field? Stick with whole item logic or default to keep? Keep.
-                        keep[key] = (originalItem as any)[key];
-                        return;
-                    }
+                    let hasMove = false;
+                    let hasKeep = false;
 
-                    if (groupIdx >= splitIdx) {
-                        move[key] = (originalItem as any)[key];
-                        hasMove = true;
-                    } else {
-                        keep[key] = (originalItem as any)[key];
-                        hasKeep = true;
-                    }
-                });
+                    Object.keys(originalItem).forEach(key => {
+                        if (['type', 'id', 'styles', 'names'].includes(key)) return;
+                        const group = getFieldGroup(key);
+                        const groupIdx = fieldOrder.indexOf(group);
 
-                if (hasMove && hasKeep) {
-                    // Actual split happened
-                    if (direction === 1) {
-                        itemToMove = move;
-                        itemToKeep = keep;
-                    } else {
-                        // Moving Up: Part 1 moves, Part 2 keeps
-                        itemToMove = keep;
-                        itemToKeep = move;
-                        // Swap IDs to keep tracking consistent if possible? 
-                        // No, move gets the new ID for simplicity.
+                        if (groupIdx === -1) {
+                            keep[key] = (originalItem as any)[key];
+                            return;
+                        }
+
+                        if (groupIdx >= splitIdx) {
+                            move[key] = (originalItem as any)[key];
+                            hasMove = true;
+                        } else {
+                            keep[key] = (originalItem as any)[key];
+                            hasKeep = true;
+                        }
+                    });
+
+                    if (hasMove && hasKeep) {
+                        if (direction === 1) {
+                            itemToMove = move;
+                            itemToKeep = keep;
+                        } else {
+                            itemToMove = keep;
+                            itemToKeep = move;
+                        }
                     }
                 }
             }

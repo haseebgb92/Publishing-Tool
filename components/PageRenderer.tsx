@@ -135,35 +135,24 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
 
             {/* Content Wrapper */}
             <div className="relative z-10 h-full flex flex-col">
-                {/* Section Header */}
-                {(page.sectionTitle) && (
-                    <div className="section-title-box" style={{ marginTop: `${(settings.sectionTitleOffset || 0) * 24}px` }}>
-                        <div className="section-title-urdu" style={{ fontSize: `${settings.globalStyles.headingSize * 1.5}rem` }}>
-                            {page.sectionTitle}
-                        </div>
-                    </div>
-                )}
-
                 {/* Items */}
                 <div className="flex-1">
                     {/* If reorder active? Always active? */}
-                    {onReorder ? renderList() : (
-                        page.items.map((item, idx) => (
-                            <div
-                                key={idx}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onItemClick?.(idx);
-                                }}
-                                className={clsx(
-                                    "cursor-pointer hover:bg-blue-50/50 transition-colors rounded p-1 border border-transparent",
-                                    selectedItemIdx === idx && "bg-blue-50/80 border-blue-200"
-                                )}
-                            >
-                                {renderItem(item, settings)}
-                            </div>
-                        ))
-                    )}
+                    {onReorder ? renderList() : page.items.map((item, idx) => (
+                        <div
+                            key={idx}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onItemClick?.(idx);
+                            }}
+                            className={clsx(
+                                "cursor-pointer hover:bg-blue-50/50 transition-colors rounded p-1 border border-transparent",
+                                selectedItemIdx === idx && "bg-blue-50/80 border-blue-200"
+                            )}
+                        >
+                            {renderItem(item, settings, idx, selectedItemIdx === idx ? selectedSubField : null, onItemClick)}
+                        </div>
+                    ))}
                 </div>
 
                 {/* Page Number */}
@@ -214,9 +203,10 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
     }
 
     if (item.type === 'section_title') {
+        const offset = (settings.sectionTitleOffset || 0) * 24;
         return (
-            <div className="section-title-box mt-4 text-center">
-                <div className="section-title-urdu" style={{ fontSize: headingSize }}>
+            <div className="section-title-box text-center" style={{ marginTop: `${offset}px` }}>
+                <div className="section-title-urdu" style={{ fontSize: `${settings.globalStyles.headingSize * 1.5}rem` }}>
                     {item.heading_urdu || item.arabic || 'Section'}
                 </div>
             </div>
@@ -257,14 +247,24 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
     if (item.names && Array.isArray(item.names)) {
         return (
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                {item.names.map((name, idx) => (
-                    <div key={idx} className="asma-item p-4 border rounded-xl bg-gray-50/30 shadow-sm">
-                        <div className="arabic-text !m-0 !p-0 !text-3xl font-bold !text-center" style={{ fontSize: `calc(${arabicSize} * 1.2)` }}>{name.arabic}</div>
-                        <div className="roman-text !m-0 !text-xs italic !text-center" style={{ fontSize: englishSize }}>{name.roman}</div>
-                        <div className="urdu-text !m-0 !text-base !text-center font-bold" style={{ fontSize: urduSize }}>{name.urdu}</div>
-                        <div className="english-text !m-0 !text-xs !text-center opacity-70" style={{ fontSize: `calc(${englishSize} * 0.9)` }}>{name.english}</div>
-                    </div>
-                ))}
+                {item.names.map((name, idx) => {
+                    const fieldKey = `name-${idx}`;
+                    return (
+                        <div
+                            key={idx}
+                            className={clsx(
+                                "asma-item p-4 border rounded-xl shadow-sm transition-all",
+                                selectedSubField === fieldKey ? "bg-yellow-50 ring-2 ring-yellow-400 z-20 scale-105" : "bg-gray-50/30 hover:bg-blue-50/50"
+                            )}
+                            onClick={(e) => { e.stopPropagation(); handleSubClick(fieldKey); }}
+                        >
+                            <div className="arabic-text !m-0 !p-0 !text-3xl font-bold !text-center" style={{ fontSize: `calc(${arabicSize} * 1.2)` }}>{name.arabic}</div>
+                            <div className="roman-text !m-0 !text-xs italic !text-center" style={{ fontSize: englishSize }}>{name.roman}</div>
+                            <div className="urdu-text !m-0 !text-base !text-center font-bold" style={{ fontSize: urduSize }}>{name.urdu}</div>
+                            <div className="english-text !m-0 !text-xs !text-center opacity-70" style={{ fontSize: `calc(${englishSize} * 0.9)` }}>{name.english}</div>
+                        </div>
+                    );
+                })}
             </div>
         );
     }

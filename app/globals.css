@@ -105,8 +105,25 @@
   color: #444;
 }
 
+.arabic-text {
+  font-family: var(--font-arabic-uthmanic), serif;
+  text-align: right;
+  direction: rtl;
+}
+
+.urdu-text {
+  font-family: var(--font-urdu), serif;
+  text-align: right;
+  direction: rtl;
+}
+
+.english-text {
+  font-family: var(--font-english-body), sans-serif;
+  text-align: left;
+}
+
 .roman-text {
-  font-family: var(--font-english-body);
+  font-family: var(--font-english-body), sans-serif;
   font-style: italic;
   font-size: 0.8rem;
   color: #666;
@@ -114,26 +131,16 @@
   margin-bottom: 15px;
 }
 
-.arabic-text {
-  text-align: right;
-  direction: rtl;
-}
-
-.urdu-text {
-  text-align: right;
-  direction: rtl;
-}
-
-.english-text {
-  text-align: left;
-}
-
 .asma-item {
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.asma-item * {
+  text-align: center !important;
 }
 
 /* Headings */
