@@ -873,7 +873,7 @@ export default function BookEditor({ initialData }: EditorProps) {
                         });
                         document.body.appendChild(container);
 
-                        const opt = {
+                        const opt: any = {
                             margin: 0,
                             filename: 'book_export.pdf',
                             image: { type: 'jpeg', quality: 0.98 },
