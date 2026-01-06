@@ -20,7 +20,7 @@ export default function BookEditor({ initialData }: EditorProps) {
     // --- State ---
     const [pages, setPages] = useState<BookPage[]>([]);
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
-    const [selectedItem, setSelectedItem] = useState<{ pageId: string, itemIdx: number } | null>(null);
+    const [selectedItem, setSelectedItem] = useState<{ pageId: string, itemIdx: number, subField?: string } | null>(null);
     const [activeTab, setActiveTab] = useState<'layout' | 'typography' | 'content' | 'assets'>('content');
 
     const [settings, setSettings] = useState<BookSettings>({
@@ -107,7 +107,7 @@ export default function BookEditor({ initialData }: EditorProps) {
     };
 
     // --- Actions ---
-    /* New Cross-Page Move Logic */
+    /* New Cross-Page Move Logic with Granular Splitting */
     const moveActiveItemToPage = (direction: -1 | 1) => {
         if (!selectedItem) return;
         const pIdx = pages.findIndex(p => p.id === selectedItem.pageId);
@@ -127,20 +127,89 @@ export default function BookEditor({ initialData }: EditorProps) {
 
         const sourcePage = { ...currentPages[pIdx] };
         const targetPage = { ...currentPages[targetPageIdx] };
-        const itemToMove = sourcePage.items[selectedItem.itemIdx];
+        const originalItem = sourcePage.items[selectedItem.itemIdx];
 
-        // Remove from source
+        let itemToMove = { ...originalItem };
+        let itemToKeep: BookItem | null = null;
+
+        if (selectedItem.subField) {
+            const fieldOrder = ['heading', 'arabic', 'roman', 'urdu', 'content_urdu', 'english', 'content_english'];
+
+            // Map actual key to fieldOrder group
+            const getFieldGroup = (key: string) => {
+                if (key.includes('heading')) return 'heading';
+                return key;
+            };
+
+            const selectedGroup = getFieldGroup(selectedItem.subField);
+            const selectedIdx = fieldOrder.indexOf(selectedGroup);
+
+            if (selectedIdx !== -1) {
+                const keep: any = { type: originalItem.type, id: originalItem.id, styles: originalItem.styles ? { ...originalItem.styles } : undefined };
+                const move: any = {
+                    type: originalItem.type === 'heading' ? 'text' : originalItem.type,
+                    id: `split-${Date.now()}`,
+                    styles: originalItem.styles ? { ...originalItem.styles } : undefined
+                };
+
+                // Determine split point based on direction
+                // Move Down: Start moving FROM selected field
+                // Move Up: Move EVERYTHING UP TO selected field (inclusive)
+                const splitIdx = direction === 1 ? selectedIdx : selectedIdx + 1;
+
+                let hasMove = false;
+                let hasKeep = false;
+
+                Object.keys(originalItem).forEach(key => {
+                    if (['type', 'id', 'styles'].includes(key)) return;
+                    const group = getFieldGroup(key);
+                    const groupIdx = fieldOrder.indexOf(group);
+
+                    if (groupIdx === -1) {
+                        // Unknown field? Stick with whole item logic or default to keep? Keep.
+                        keep[key] = (originalItem as any)[key];
+                        return;
+                    }
+
+                    if (groupIdx >= splitIdx) {
+                        move[key] = (originalItem as any)[key];
+                        hasMove = true;
+                    } else {
+                        keep[key] = (originalItem as any)[key];
+                        hasKeep = true;
+                    }
+                });
+
+                if (hasMove && hasKeep) {
+                    // Actual split happened
+                    if (direction === 1) {
+                        itemToMove = move;
+                        itemToKeep = keep;
+                    } else {
+                        // Moving Up: Part 1 moves, Part 2 keeps
+                        itemToMove = keep;
+                        itemToKeep = move;
+                        // Swap IDs to keep tracking consistent if possible? 
+                        // No, move gets the new ID for simplicity.
+                    }
+                }
+            }
+        }
+
+        // Apply changes to Source Page
         const newSourceItems = [...sourcePage.items];
-        newSourceItems.splice(selectedItem.itemIdx, 1);
+        if (itemToKeep) {
+            newSourceItems[selectedItem.itemIdx] = itemToKeep;
+        } else {
+            newSourceItems.splice(selectedItem.itemIdx, 1);
+        }
         sourcePage.items = newSourceItems;
 
-        // Add to target
+        // Apply changes to Target Page
         const newTargetItems = [...targetPage.items];
         if (direction === -1) {
-            // Moving UP to prev page -> Append to end
             newTargetItems.push(itemToMove);
         } else {
-            // Moving DOWN to next page -> Prepend to start
             newTargetItems.unshift(itemToMove);
         }
         targetPage.items = newTargetItems;
@@ -149,7 +218,7 @@ export default function BookEditor({ initialData }: EditorProps) {
         currentPages[targetPageIdx] = targetPage;
 
         setPages(currentPages);
-        // Follow item
+        // Follow the moved part
         setSelectedItem({
             pageId: targetPage.id,
             itemIdx: direction === -1 ? newTargetItems.length - 1 : 0
@@ -214,12 +283,21 @@ export default function BookEditor({ initialData }: EditorProps) {
         if (pIdx === -1) return;
 
         const newPages = [...pages];
-        const newItems = [...newPages[pIdx].items];
-        newItems.splice(selectedItem.itemIdx, 1);
-
-        // If page becomes empty? Keep it or remove?
-        // User might want empty page.
-        newPages[pIdx] = { ...newPages[pIdx], items: newItems };
+        if (selectedItem.subField) {
+            const item = { ...newPages[pIdx].items[selectedItem.itemIdx] };
+            if (selectedItem.subField === 'heading') {
+                delete item.heading_urdu;
+                delete item.heading_english;
+            } else {
+                // @ts-ignore
+                delete item[selectedItem.subField];
+            }
+            newPages[pIdx].items[selectedItem.itemIdx] = item;
+        } else {
+            const newItems = [...newPages[pIdx].items];
+            newItems.splice(selectedItem.itemIdx, 1);
+            newPages[pIdx] = { ...newPages[pIdx], items: newItems };
+        }
         setPages(newPages);
         setSelectedItem(null); // Deselect
     };
@@ -643,8 +721,14 @@ export default function BookEditor({ initialData }: EditorProps) {
                             settings={settings}
                             isActive={selectedPageId === page.id}
                             selectedItemIdx={selectedPageId === page.id && selectedItem?.pageId === page.id ? selectedItem.itemIdx : null}
-                            onItemClick={(itemIdx) => {
-                                setSelectedItem({ pageId: page.id, itemIdx });
+                            selectedSubField={selectedPageId === page.id && selectedItem?.pageId === page.id ? selectedItem.subField : null}
+                            onItemClick={(itemIdx, subField) => {
+                                // 1st click: Select whole item. 2nd click: select sub-field
+                                if (selectedItem?.pageId === page.id && selectedItem?.itemIdx === itemIdx) {
+                                    setSelectedItem({ pageId: page.id, itemIdx, subField });
+                                } else {
+                                    setSelectedItem({ pageId: page.id, itemIdx });
+                                }
                                 setActiveTab('content'); // Auto switch to edit content
                             }}
                             onReorder={(items) => handleReorder(page.id, items)}
