@@ -178,15 +178,32 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
         );
     };
 
-    const getStyle = (key: 'arabicSize' | 'urduSize' | 'englishSize' | 'headingSize', baseRem: number) => {
-        if (item.styles && item.styles[key]) return `${item.styles[key]}rem`;
-        return `${settings.globalStyles[key] || baseRem}rem`;
+    // Generic style getter
+    const getStyleVal = <K extends keyof BookSettings['globalStyles']>(key: K, defaultVal: any) => {
+        if (item.styles && (item.styles as any)[key] !== undefined) return (item.styles as any)[key];
+        return settings.globalStyles[key] !== undefined ? settings.globalStyles[key] : defaultVal;
     };
 
-    const arabicSize = getStyle('arabicSize', 1.2);
-    const urduSize = getStyle('urduSize', 1.0);
-    const englishSize = getStyle('englishSize', 0.9);
-    const headingSize = getStyle('headingSize', 1.2);
+    const arabicSize = `${getStyleVal('arabicSize', 1.2)}rem`;
+    const urduSize = `${getStyleVal('urduSize', 1.0)}rem`;
+    const englishSize = `${getStyleVal('englishSize', 0.9)}rem`;
+    const headingSize = `${getStyleVal('headingSize', 1.2)}rem`;
+
+    const arabicAlign = getStyleVal('arabicAlign', 'right');
+    const urduAlign = getStyleVal('urduAlign', 'right');
+    const englishAlign = getStyleVal('englishAlign', 'left');
+    const headingAlign = getStyleVal('headingAlign', 'center');
+
+    const arabicFont = getStyleVal('arabicFont', 'Scheherazade New');
+    const urduFont = getStyleVal('urduFont', 'Noto Nastaliq Urdu');
+    const englishFont = getStyleVal('englishFont', 'Inter');
+
+    const styles = {
+        arabic: { fontSize: arabicSize, textAlign: arabicAlign, fontFamily: arabicFont },
+        urdu: { fontSize: urduSize, textAlign: urduAlign, fontFamily: urduFont, direction: 'rtl' as 'rtl' },
+        english: { fontSize: englishSize, textAlign: englishAlign, fontFamily: englishFont, direction: 'ltr' as 'ltr' },
+        heading: { fontSize: headingSize, textAlign: headingAlign, fontFamily: urduFont }
+    };
 
     if (item.type === 'toc_entry') {
         return (
@@ -205,8 +222,12 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
     if (item.type === 'section_title') {
         const offset = (settings.sectionTitleOffset || 0) * 24;
         return (
-            <div className="section-title-box text-center" style={{ marginTop: `${offset}px` }}>
-                <div className="section-title-urdu" style={{ fontSize: `${settings.globalStyles.headingSize * 1.5}rem` }}>
+            <div className="section-title-box" style={{ marginTop: `${offset}px`, textAlign: headingAlign }}>
+                <div
+                    className={clsx("section-title-urdu transition-colors rounded", selectedSubField === 'heading_urdu' && "bg-yellow-100 ring-2 ring-yellow-400")}
+                    style={{ ...styles.heading, fontSize: `calc(${headingSize} * 1.5)` }}
+                    onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('heading_urdu'); }}
+                >
                     {item.heading_urdu || item.arabic || 'Section'}
                 </div>
             </div>
@@ -222,22 +243,37 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
         return (
             <div className="mb-4">
                 <div
-                    className={clsx("heading-item mb-2", !hasBgImage && "islamic-heading-banner", selectedSubField === 'heading' && "ring-2 ring-yellow-400 bg-yellow-50")}
-                    style={bgStyle}
-                    onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('heading'); }}
+                    className={clsx("heading-item mb-2", !hasBgImage && "islamic-heading-banner")}
+                    style={{ ...bgStyle, textAlign: headingAlign }}
                 >
-                    {item.heading_urdu && <div className="heading-urdu" style={{ fontSize: headingSize }}>{item.heading_urdu}</div>}
-                    {item.heading_english && <div className="heading-english" style={{ fontSize: `calc(${headingSize} * 0.7)` }}>{item.heading_english}</div>}
+                    {item.heading_urdu && (
+                        <div
+                            className={clsx("heading-urdu rounded px-1", selectedSubField === 'heading_urdu' && "bg-yellow-100 ring-2 ring-yellow-400 z-20")}
+                            style={styles.heading}
+                            onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('heading_urdu'); }}
+                        >
+                            {item.heading_urdu}
+                        </div>
+                    )}
+                    {item.heading_english && (
+                        <div
+                            className={clsx("heading-english rounded px-1", selectedSubField === 'heading_english' && "bg-yellow-100 ring-2 ring-yellow-400 z-20")}
+                            style={{ ...styles.english, fontSize: `calc(${headingSize} * 0.7)` }}
+                            onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('heading_english'); }}
+                        >
+                            {item.heading_english}
+                        </div>
+                    )}
                 </div>
                 {/* Render other fields if present */}
                 {(item.arabic || item.urdu || item.english || item.roman || item.content_urdu || item.content_english) && (
                     <div className="mt-2 pl-4 border-l-2 border-gray-100/50 space-y-2">
-                        {item.arabic && <div className={getFieldClass('arabic')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('arabic'); }} style={{ fontSize: arabicSize }}>{item.arabic}</div>}
-                        {item.roman && <div className={getFieldClass('roman')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('roman'); }} style={{ fontSize: englishSize }}>{item.roman}</div>}
-                        {item.urdu && <div className={getFieldClass('urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('urdu'); }} style={{ fontSize: urduSize }}>{item.urdu}</div>}
-                        {item.content_urdu && !item.urdu && <div className={getFieldClass('content_urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_urdu'); }} style={{ fontSize: urduSize }}>{item.content_urdu}</div>}
-                        {item.english && <div className={getFieldClass('english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('english'); }} style={{ fontSize: englishSize }}>{item.english}</div>}
-                        {item.content_english && !item.english && <div className={getFieldClass('content_english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_english'); }} style={{ fontSize: englishSize }}>{item.content_english}</div>}
+                        {item.arabic && <div className={getFieldClass('arabic')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('arabic'); }} style={styles.arabic}>{item.arabic}</div>}
+                        {item.roman && <div className={getFieldClass('roman')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('roman'); }} style={styles.english}>{item.roman}</div>}
+                        {item.urdu && <div className={getFieldClass('urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('urdu'); }} style={styles.urdu}>{item.urdu}</div>}
+                        {item.content_urdu && !item.urdu && <div className={getFieldClass('content_urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_urdu'); }} style={styles.urdu}>{item.content_urdu}</div>}
+                        {item.english && <div className={getFieldClass('english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('english'); }} style={styles.english}>{item.english}</div>}
+                        {item.content_english && !item.english && <div className={getFieldClass('content_english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_english'); }} style={styles.english}>{item.content_english}</div>}
                     </div>
                 )}
             </div>
@@ -256,12 +292,13 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                                 "asma-item p-4 border rounded-xl shadow-sm transition-all",
                                 selectedSubField === fieldKey ? "bg-yellow-50 ring-2 ring-yellow-400 z-20 scale-105" : "bg-gray-50/30 hover:bg-blue-50/50"
                             )}
+                            onClick={(e) => { e.stopPropagation(); handleSubClick(fieldKey); }} // Single click for now or double? User said "everything individually on double click".
                             onDoubleClick={(e) => { e.stopPropagation(); handleSubClick(fieldKey); }}
                         >
-                            <div className="arabic-text !m-0 !p-0 !text-3xl font-bold !text-center" style={{ fontSize: `calc(${arabicSize} * 1.2)` }}>{name.arabic}</div>
-                            <div className="roman-text !m-0 !text-xs italic !text-center" style={{ fontSize: englishSize }}>{name.roman}</div>
-                            <div className="urdu-text !m-0 !text-base !text-center font-bold" style={{ fontSize: urduSize }}>{name.urdu}</div>
-                            <div className="english-text !m-0 !text-xs !text-center opacity-70" style={{ fontSize: `calc(${englishSize} * 0.9)` }}>{name.english}</div>
+                            <div className="arabic-text !m-0 !p-0 !text-3xl font-bold" style={{ ...styles.arabic, fontSize: `calc(${arabicSize} * 1.2)`, textAlign: 'center' }}>{name.arabic}</div>
+                            <div className="roman-text !m-0 !text-xs italic" style={{ ...styles.english, textAlign: 'center' }}>{name.roman}</div>
+                            <div className="urdu-text !m-0 !text-base font-bold" style={{ ...styles.urdu, textAlign: 'center' }}>{name.urdu}</div>
+                            <div className="english-text !m-0 !text-xs opacity-70" style={{ ...styles.english, fontSize: `calc(${englishSize} * 0.9)`, textAlign: 'center' }}>{name.english}</div>
                         </div>
                     );
                 })}
@@ -271,12 +308,12 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
 
     return (
         <div className="content-item mb-4 space-y-2">
-            {item.arabic && <div className={getFieldClass('arabic')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('arabic'); }} style={{ fontSize: arabicSize }}>{item.arabic}</div>}
-            {item.roman && <div className={getFieldClass('roman')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('roman'); }} style={{ fontSize: englishSize }}>{item.roman}</div>}
-            {item.urdu && <div className={getFieldClass('urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('urdu'); }} style={{ fontSize: urduSize }}>{item.urdu}</div>}
-            {item.content_urdu && !item.urdu && <div className={getFieldClass('content_urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_urdu'); }} style={{ fontSize: urduSize }}>{item.content_urdu}</div>}
-            {item.english && <div className={getFieldClass('english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('english'); }} style={{ fontSize: englishSize }}>{item.english}</div>}
-            {item.content_english && !item.english && <div className={getFieldClass('content_english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_english'); }} style={{ fontSize: englishSize }}>{item.content_english}</div>}
+            {item.arabic && <div className={getFieldClass('arabic')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('arabic'); }} style={styles.arabic}>{item.arabic}</div>}
+            {item.roman && <div className={getFieldClass('roman')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('roman'); }} style={styles.english}>{item.roman}</div>}
+            {item.urdu && <div className={getFieldClass('urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('urdu'); }} style={styles.urdu}>{item.urdu}</div>}
+            {item.content_urdu && !item.urdu && <div className={getFieldClass('content_urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_urdu'); }} style={styles.urdu}>{item.content_urdu}</div>}
+            {item.english && <div className={getFieldClass('english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('english'); }} style={styles.english}>{item.english}</div>}
+            {item.content_english && !item.english && <div className={getFieldClass('content_english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_english'); }} style={styles.english}>{item.content_english}</div>}
         </div>
     );
 }

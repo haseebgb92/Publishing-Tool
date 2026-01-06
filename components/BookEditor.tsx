@@ -9,7 +9,8 @@ import clsx from 'clsx';
 import {
     Download, Upload, Settings, Save, FileJson,
     Image as ImageIcon, Type, LayoutTemplate,
-    RefreshCcw, ArrowDown, ArrowUp, Trash, RotateCcw
+    RefreshCcw, ArrowDown, ArrowUp, Trash, RotateCcw,
+    AlignLeft, AlignCenter, AlignRight, AlignJustify
 } from 'lucide-react';
 
 interface EditorProps {
@@ -31,7 +32,14 @@ export default function BookEditor({ initialData }: EditorProps) {
             arabicSize: 1.2,
             urduSize: 1.0,
             englishSize: 0.9,
-            headingSize: 1.2
+            headingSize: 1.2,
+            arabicAlign: 'right',
+            urduAlign: 'right',
+            englishAlign: 'left',
+            headingAlign: 'center',
+            arabicFont: 'Scheherazade New',
+            urduFont: 'Noto Nastaliq Urdu',
+            englishFont: 'Inter'
         },
         sectionTitleOffset: 0,
         pageBackgroundImage: '/bg-page.jpg',
@@ -508,26 +516,111 @@ export default function BookEditor({ initialData }: EditorProps) {
                         <>
                             {activeItem ? (
                                 <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
-                                    <div className="bg-purple-50 border border-purple-100 p-3 rounded-lg">
+                                    <div className="bg-purple-50 border border-purple-100 p-3 rounded-lg mb-4">
                                         <h3 className="text-xs font-bold text-purple-700 uppercase mb-3 flex justify-between">
-                                            Individual Styling
+                                            Styles ({selectedItem?.subField || 'Item'})
                                             <button onClick={() => updateItem('styles', undefined, false)} title="Reset styles" className="text-purple-400 hover:text-purple-600"><RefreshCcw size={12} /></button>
                                         </h3>
-                                        <StyleSlider
-                                            label="Arabic Size"
-                                            value={activeItem.styles?.arabicSize || settings.globalStyles.arabicSize}
-                                            onChange={(v) => updateItem('arabicSize', v, true)}
-                                        />
-                                        <StyleSlider
-                                            label="Urdu Size"
-                                            value={activeItem.styles?.urduSize || settings.globalStyles.urduSize}
-                                            onChange={(v) => updateItem('urduSize', v, true)}
-                                        />
-                                        <StyleSlider
-                                            label="English Size"
-                                            value={activeItem.styles?.englishSize || settings.globalStyles.englishSize}
-                                            onChange={(v) => updateItem('englishSize', v, true)}
-                                        />
+
+                                        {/* Dynamic Controls based on selectedSubField */}
+                                        {selectedItem?.subField && (
+                                            <div className="space-y-4">
+                                                {/* Font Size */}
+                                                {(selectedItem.subField.includes('arabic') || selectedItem.subField.includes('name')) && (
+                                                    <StyleSlider label="Arabic Size" value={activeItem.styles?.arabicSize || settings.globalStyles.arabicSize} onChange={(v) => updateItem('arabicSize', v, true)} />
+                                                )}
+                                                {(selectedItem.subField.includes('urdu') || selectedItem.subField.includes('heading')) && (
+                                                    <StyleSlider label="Urdu/Heading Size" value={activeItem.styles?.urduSize || settings.globalStyles.urduSize} onChange={(v) => updateItem('urduSize', v, true)} />
+                                                )}
+                                                {(selectedItem.subField.includes('english') || selectedItem.subField.includes('roman')) && (
+                                                    <StyleSlider label="English Size" value={activeItem.styles?.englishSize || settings.globalStyles.englishSize} onChange={(v) => updateItem('englishSize', v, true)} />
+                                                )}
+
+                                                <div className="h-px bg-purple-200/50 my-2"></div>
+
+                                                {/* Alignment */}
+                                                <div>
+                                                    <label className="text-[10px] uppercase font-bold text-purple-400 mb-1 block">Alignment</label>
+                                                    <div className="flex bg-white rounded border p-1 gap-1">
+                                                        {['left', 'center', 'right', 'justify'].map((align: any) => (
+                                                            <button
+                                                                key={align}
+                                                                onClick={() => {
+                                                                    const sub = selectedItem!.subField!;
+                                                                    const key = sub.includes('arabic') ? 'arabicAlign' :
+                                                                        (sub.includes('heading') && sub.includes('english')) ? 'englishAlign' : // Custom for English Heading
+                                                                            sub.includes('heading') ? 'headingAlign' :
+                                                                                sub.includes('urdu') ? 'urduAlign' : 'englishAlign';
+                                                                    updateItem(key, align, true);
+                                                                }}
+                                                                className={clsx("p-1 rounded flex-1 flex justify-center hover:bg-purple-50",
+                                                                    // @ts-ignore
+                                                                    (activeItem.styles?.[`${selectedItem!.subField!.includes('arabic') ? 'arabic' :
+                                                                        (selectedItem!.subField!.includes('heading') && selectedItem!.subField!.includes('english')) ? 'english' :
+                                                                            selectedItem!.subField!.includes('heading') ? 'heading' :
+                                                                                selectedItem!.subField!.includes('urdu') ? 'urdu' :
+                                                                                    'english'}Align`] || 'center') === align ? "bg-purple-100 text-purple-700" : "text-gray-400"
+                                                                )}
+                                                            >
+                                                                {align === 'left' && <AlignLeft size={14} />}
+                                                                {align === 'center' && <AlignCenter size={14} />}
+                                                                {align === 'right' && <AlignRight size={14} />}
+                                                                {align === 'justify' && <AlignJustify size={14} />}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Font Select */}
+                                                <div>
+                                                    <label className="text-[10px] uppercase font-bold text-purple-400 mb-1 block mt-2">Font Family</label>
+                                                    <select
+                                                        className="w-full text-xs p-1 border rounded"
+                                                        onChange={(e) => {
+                                                            const sub = selectedItem!.subField!;
+                                                            const key = sub.includes('arabic') ? 'arabicFont' :
+                                                                (sub.includes('heading') && sub.includes('english')) ? 'englishFont' :
+                                                                    sub.includes('heading') ? 'urduFont' : // Headings use Urdu font usually
+                                                                        sub.includes('urdu') ? 'urduFont' : 'englishFont';
+                                                            updateItem(key, e.target.value, true);
+                                                        }}
+                                                        // @ts-ignore
+                                                        value={activeItem.styles?.[`${selectedItem!.subField!.includes('arabic') ? 'arabic' :
+                                                            (selectedItem!.subField!.includes('heading') && selectedItem!.subField!.includes('english')) ? 'english' :
+                                                                selectedItem!.subField!.includes('heading') ? 'urdu' :
+                                                                    selectedItem!.subField!.includes('urdu') ? 'urdu' : 'english'}Font`] || ''}
+                                                    >
+                                                        <option value="">Default (Global)</option>
+                                                        {selectedItem.subField.includes('arabic') && (
+                                                            <>
+                                                                <option value="Scheherazade New">Scheherazade New</option>
+                                                                <option value="Amiri">Amiri</option>
+                                                                <option value="Cairo">Cairo</option>
+                                                                <option value="Lateef">Lateef</option>
+                                                            </>
+                                                        )}
+                                                        {(selectedItem.subField.includes('urdu') || (selectedItem.subField.includes('heading') && !selectedItem.subField.includes('english'))) && (
+                                                            <>
+                                                                <option value="Noto Nastaliq Urdu">Noto Nastaliq Urdu</option>
+                                                                <option value="Gulzar">Gulzar</option>
+                                                            </>
+                                                        )}
+                                                        {(selectedItem.subField.includes('english') || selectedItem.subField.includes('roman') || (selectedItem.subField.includes('heading') && selectedItem.subField.includes('english'))) && (
+                                                            <>
+                                                                <option value="Inter">Inter</option>
+                                                                <option value="Roboto">Roboto</option>
+                                                                <option value="Lato">Lato</option>
+                                                                <option value="Merriweather">Merriweather</option>
+                                                            </>
+                                                        )}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {!selectedItem?.subField && (
+                                            <div className="text-xs text-gray-500 italic">Select a specific part (double click) to style it individually.</div>
+                                        )}
                                     </div>
 
                                     <div className="space-y-3">
@@ -600,6 +693,7 @@ export default function BookEditor({ initialData }: EditorProps) {
                                         value={settings.globalStyles.urduSize}
                                         onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, urduSize: v } })}
                                     />
+
                                     <StyleSlider
                                         label="Base English Size" isGlobal
                                         value={settings.globalStyles.englishSize}
@@ -610,6 +704,20 @@ export default function BookEditor({ initialData }: EditorProps) {
                                         value={settings.globalStyles.headingSize}
                                         onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, headingSize: v } })}
                                     />
+
+                                    <div className="pt-2 border-t mt-2">
+                                        <label className="text-xs font-bold block mb-1">Global Arabic Font</label>
+                                        <select
+                                            className="w-full text-xs border rounded p-1"
+                                            value={settings.globalStyles.arabicFont}
+                                            onChange={(e) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, arabicFont: e.target.value } })}
+                                        >
+                                            <option value="Scheherazade New">Scheherazade New</option>
+                                            <option value="Amiri">Amiri</option>
+                                            <option value="Cairo">Cairo</option>
+                                            <option value="Lateef">Lateef</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>

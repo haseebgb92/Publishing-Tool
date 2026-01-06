@@ -48,6 +48,17 @@ export interface BookItem {
         urduSize?: number;
         englishSize?: number;
         headingSize?: number;
+
+        // Alignments
+        arabicAlign?: 'left' | 'center' | 'right' | 'justify';
+        urduAlign?: 'left' | 'center' | 'right' | 'justify';
+        englishAlign?: 'left' | 'center' | 'right' | 'justify'; // Applies to Roman too
+        headingAlign?: 'left' | 'center' | 'right';
+
+        // Fonts
+        arabicFont?: string;
+        urduFont?: string;
+        englishFont?: string;
     }
 }
 
@@ -78,6 +89,17 @@ export interface BookSettings {
         urduSize: number;
         englishSize: number;
         headingSize: number;
+
+        // Alignments
+        arabicAlign: 'left' | 'center' | 'right' | 'justify';
+        urduAlign: 'left' | 'center' | 'right' | 'justify';
+        englishAlign: 'left' | 'center' | 'right' | 'justify';
+        headingAlign: 'left' | 'center' | 'right';
+
+        // Fonts
+        arabicFont: string;
+        urduFont: string;
+        englishFont: string;
     };
     sectionTitleOffset: number;
     // Assets
