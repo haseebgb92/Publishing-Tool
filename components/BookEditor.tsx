@@ -32,6 +32,7 @@ export default function BookEditor({ initialData }: EditorProps) {
             englishSize: 0.9,
             headingSize: 1.2
         },
+        sectionTitleOffset: 0,
         pageBackgroundImage: '/bg-page.jpg',
         headingBackgroundImage: '',
         showOutlines: true
@@ -54,18 +55,32 @@ export default function BookEditor({ initialData }: EditorProps) {
                     type: 'toc_entry',
                     urdu: e.topic || e.section,
                     english: e.topic_english,
-                    toc_page: e.page
+                    toc_page: e.page,
+                    id: `toc-${Math.random().toString(36).substr(2, 9)}`
                 }));
             }
 
-            // Assign IDs
-            items = items.map((it: any, i: number) => ({ ...it, id: `${pageId}-item-${i}` }));
+            // Chunk Asma-ul-Husna and assign IDs
+            const processedItems: BookItem[] = [];
+            items.forEach((item: any, i: number) => {
+                if (item.type === 'names_of_allah' && item.names && item.names.length > 12) {
+                    for (let n = 0; n < item.names.length; n += 12) {
+                        processedItems.push({
+                            ...item,
+                            id: `${pageId}-item-${i}-chunk-${n}`,
+                            names: item.names.slice(n, n + 12)
+                        });
+                    }
+                } else {
+                    processedItems.push({ ...item, id: item.id || `${pageId}-item-${i}` });
+                }
+            });
 
             return {
                 id: pageId,
                 pageNumber: p.book_page_number || idx + 1,
                 sectionTitle: p.section,
-                items: items
+                items: processedItems
             };
         });
         setPages(loadedPages);
@@ -598,6 +613,15 @@ export default function BookEditor({ initialData }: EditorProps) {
                                             />
                                         </div>
                                     ))}
+                                    <div>
+                                        <label className="block text-[10px] text-gray-400 uppercase">Heading Top Offset</label>
+                                        <input
+                                            type="number"
+                                            value={settings.sectionTitleOffset}
+                                            onChange={(e) => setSettings({ ...settings, sectionTitleOffset: parseInt(e.target.value) || 0 })}
+                                            className="w-full text-xs p-1 border rounded"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="pt-4 border-t space-y-4">

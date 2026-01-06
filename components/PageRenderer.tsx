@@ -137,7 +137,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
             <div className="relative z-10 h-full flex flex-col">
                 {/* Section Header */}
                 {(page.sectionTitle) && (
-                    <div className="section-title-box">
+                    <div className="section-title-box" style={{ marginTop: `${(settings.sectionTitleOffset || 0) * 24}px` }}>
                         <div className="section-title-urdu" style={{ fontSize: `${settings.globalStyles.headingSize * 1.5}rem` }}>
                             {page.sectionTitle}
                         </div>
@@ -256,13 +256,13 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
 
     if (item.names && Array.isArray(item.names)) {
         return (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                 {item.names.map((name, idx) => (
-                    <div key={idx} className="p-3 border rounded-lg bg-gray-50/50 text-center">
-                        <div className="arabic-text !m-0 !p-0 !text-2xl" style={{ fontSize: arabicSize }}>{name.arabic}</div>
-                        <div className="roman-text !m-0 !text-xs italic" style={{ fontSize: englishSize }}>{name.roman}</div>
-                        <div className="urdu-text !m-0 !text-sm !text-center" style={{ fontSize: urduSize }}>{name.urdu}</div>
-                        <div className="english-text !m-0 !text-[10px] !text-center" style={{ fontSize: `calc(${englishSize} * 0.8)` }}>{name.english}</div>
+                    <div key={idx} className="asma-item p-4 border rounded-xl bg-gray-50/30 shadow-sm">
+                        <div className="arabic-text !m-0 !p-0 !text-3xl font-bold !text-center" style={{ fontSize: `calc(${arabicSize} * 1.2)` }}>{name.arabic}</div>
+                        <div className="roman-text !m-0 !text-xs italic !text-center" style={{ fontSize: englishSize }}>{name.roman}</div>
+                        <div className="urdu-text !m-0 !text-base !text-center font-bold" style={{ fontSize: urduSize }}>{name.urdu}</div>
+                        <div className="english-text !m-0 !text-xs !text-center opacity-70" style={{ fontSize: `calc(${englishSize} * 0.9)` }}>{name.english}</div>
                     </div>
                 ))}
             </div>

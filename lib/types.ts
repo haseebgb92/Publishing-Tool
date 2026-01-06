@@ -79,6 +79,7 @@ export interface BookSettings {
         englishSize: number;
         headingSize: number;
     };
+    sectionTitleOffset: number;
     // Assets
     pageBackgroundImage?: string; // Data URL or Path
     headingBackgroundImage?: string;

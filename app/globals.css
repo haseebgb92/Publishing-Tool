@@ -24,7 +24,8 @@
 
 @layer base {
   body {
-    @apply bg-gray-100 text-gray-900;
+    background-color: #f3f4f6;
+    color: #111827;
   }
 }
 
@@ -100,7 +101,7 @@
   font-family: var(--font-english-body);
   font-size: 0.85rem;
   line-height: 1.5;
-  text-align: justify;
+  text-align: left;
   color: #444;
 }
 
@@ -109,8 +110,30 @@
   font-style: italic;
   font-size: 0.8rem;
   color: #666;
-  text-align: center;
+  text-align: left;
   margin-bottom: 15px;
+}
+
+.arabic-text {
+  text-align: right;
+  direction: rtl;
+}
+
+.urdu-text {
+  text-align: right;
+  direction: rtl;
+}
+
+.english-text {
+  text-align: left;
+}
+
+.asma-item {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Headings */
