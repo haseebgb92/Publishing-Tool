@@ -208,65 +208,43 @@ export default function BookEditor({ initialData }: EditorProps) {
                     itemToMove = { ...originalItem, id: `split-asma-${Date.now()}`, names: moveNames };
                 }
             } else {
-                const fieldOrder = ['heading_urdu', 'heading_english', 'arabic', 'roman', 'urdu', 'content_urdu', 'english', 'content_english'];
-
-                // Map actual key to fieldOrder - handle both exact matches and grouped fields
-                const getFieldGroup = (key: string) => {
-                    // Direct match first
-                    if (fieldOrder.includes(key)) return key;
-                    // Handle heading variants
-                    if (key.includes('heading')) {
-                        if (key.includes('english')) return 'heading_english';
-                        return 'heading_urdu';
-                    }
-                    return key;
+                // For individual field selection, move ONLY that field
+                const keep: any = { type: originalItem.type, id: originalItem.id, styles: originalItem.styles ? { ...originalItem.styles } : undefined };
+                const move: any = {
+                    type: originalItem.type === 'heading' ? 'text' : originalItem.type,
+                    id: `split-${Date.now()}`,
+                    styles: originalItem.styles ? { ...originalItem.styles } : undefined
                 };
 
-                const selectedGroup = getFieldGroup(selectedItem.subField);
-                const selectedIdx = fieldOrder.indexOf(selectedGroup);
+                let hasMove = false;
+                let hasKeep = false;
 
-                if (selectedIdx !== -1) {
-                    const keep: any = { type: originalItem.type, id: originalItem.id, styles: originalItem.styles ? { ...originalItem.styles } : undefined };
-                    const move: any = {
-                        type: originalItem.type === 'heading' ? 'text' : originalItem.type,
-                        id: `split-${Date.now()}`,
-                        styles: originalItem.styles ? { ...originalItem.styles } : undefined
-                    };
+                Object.keys(originalItem).forEach(key => {
+                    if (['type', 'id', 'styles', 'names'].includes(key)) return;
 
-                    // Determine split point based on direction
-                    const splitIdx = direction === 1 ? selectedIdx : selectedIdx + 1;
+                    // Check if this is the selected field or related to it
+                    const isSelectedField =
+                        key === selectedItem.subField ||
+                        (selectedItem.subField === 'heading' && (key === 'heading_urdu' || key === 'heading_english')) ||
+                        (selectedItem.subField === 'heading_urdu' && key === 'heading_urdu') ||
+                        (selectedItem.subField === 'heading_english' && key === 'heading_english');
 
-                    let hasMove = false;
-                    let hasKeep = false;
-
-                    Object.keys(originalItem).forEach(key => {
-                        if (['type', 'id', 'styles', 'names'].includes(key)) return;
-                        const group = getFieldGroup(key);
-                        const groupIdx = fieldOrder.indexOf(group);
-
-                        if (groupIdx === -1) {
-                            keep[key] = (originalItem as any)[key];
-                            return;
-                        }
-
-                        if (groupIdx >= splitIdx) {
-                            move[key] = (originalItem as any)[key];
-                            hasMove = true;
-                        } else {
-                            keep[key] = (originalItem as any)[key];
-                            hasKeep = true;
-                        }
-                    });
-
-                    if (hasMove && hasKeep) {
-                        if (direction === 1) {
-                            itemToMove = move;
-                            itemToKeep = keep;
-                        } else {
-                            itemToMove = keep;
-                            itemToKeep = move;
-                        }
+                    if (isSelectedField) {
+                        move[key] = (originalItem as any)[key];
+                        hasMove = true;
+                    } else {
+                        keep[key] = (originalItem as any)[key];
+                        hasKeep = true;
                     }
+                });
+
+                if (hasMove && hasKeep) {
+                    itemToMove = move;
+                    itemToKeep = keep;
+                } else if (hasMove) {
+                    // All fields are being moved, don't keep anything
+                    itemToMove = { ...originalItem };
+                    itemToKeep = null;
                 }
             }
         }
@@ -392,7 +370,7 @@ export default function BookEditor({ initialData }: EditorProps) {
         }
 
         newPages[pIdx].items[selectedItem.itemIdx] = item;
-        setPages(newPages);
+        setPages(newPages); // Keep setPages for immediate updates without adding to history
     };
 
     const deletePage = () => {
