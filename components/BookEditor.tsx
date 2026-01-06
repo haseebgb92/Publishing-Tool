@@ -32,8 +32,8 @@ export default function BookEditor({ initialData }: EditorProps) {
             englishSize: 0.9,
             headingSize: 1.2
         },
-        pageBackgroundImage: '/bg-page.png',
-        headingBackgroundImage: '/bg-heading.jpg',
+        pageBackgroundImage: '/bg-page.jpg',
+        headingBackgroundImage: '/bg-heading.png',
         showOutlines: true
     });
 
@@ -46,9 +46,9 @@ export default function BookEditor({ initialData }: EditorProps) {
 
     const loadBookData = (data: any[]) => {
         const loadedPages = data.map((p, idx) => {
+            const pageId = `page-${idx}`;
             let items = p.items || [];
 
-            // Transform TOC entries to items if needed
             if (p.type === 'table_of_contents' && p.entries) {
                 items = p.entries.map((e: any) => ({
                     type: 'toc_entry',
@@ -58,8 +58,11 @@ export default function BookEditor({ initialData }: EditorProps) {
                 }));
             }
 
+            // Assign IDs
+            items = items.map((it: any, i: number) => ({ ...it, id: `${pageId}-item-${i}` }));
+
             return {
-                id: `page-${idx}`,
+                id: pageId,
                 pageNumber: p.book_page_number || idx + 1,
                 sectionTitle: p.section,
                 items: items
@@ -67,6 +70,16 @@ export default function BookEditor({ initialData }: EditorProps) {
         });
         setPages(loadedPages);
         if (loadedPages.length > 0) setSelectedPageId(loadedPages[0].id);
+    };
+
+    const handleReorder = (pageId: string, newItems: BookItem[]) => {
+        setPages(pages => {
+            const pIdx = pages.findIndex(p => p.id === pageId);
+            if (pIdx === -1) return pages;
+            const newPages = [...pages];
+            newPages[pIdx] = { ...newPages[pIdx], items: newItems };
+            return newPages;
+        });
     };
 
     // --- File Handling ---
@@ -446,6 +459,7 @@ export default function BookEditor({ initialData }: EditorProps) {
                                 setSelectedItem({ pageId: page.id, itemIdx });
                                 setActiveTab('content'); // Auto switch to edit content
                             }}
+                            onReorder={(items) => handleReorder(page.id, items)}
                         />
                     </div>
                 ))}

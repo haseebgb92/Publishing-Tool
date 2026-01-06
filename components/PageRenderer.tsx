@@ -2,6 +2,9 @@
 import React from 'react';
 import { BookPage, BookItem, BookSettings } from '@/lib/types';
 import clsx from 'clsx';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface PageRendererProps {
     page: BookPage;
@@ -9,6 +12,33 @@ interface PageRendererProps {
     isActive?: boolean;
     selectedItemIdx?: number | null;
     onItemClick?: (itemIdx: number) => void;
+    onReorder?: (items: BookItem[]) => void;
+}
+
+// Sortable Item Wrapper
+function SortableItemWrapper(props: any) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: props.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : 'auto',
+        position: 'relative' as 'relative',
+        touchAction: 'none' // Important for pointer sensors
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+            {props.children}
+        </div>
+    );
 }
 
 export const PageRenderer: React.FC<PageRendererProps> = ({
@@ -16,8 +46,69 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
     settings,
     isActive,
     selectedItemIdx,
-    onItemClick
+    onItemClick,
+    onReorder
 }) => {
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (active.id !== over?.id && onReorder) {
+            const oldIndex = page.items.findIndex((i, idx) => (i.id || `item-${idx}`) === active.id);
+            const newIndex = page.items.findIndex((i, idx) => (i.id || `item-${idx}`) === over?.id);
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                onReorder(arrayMove(page.items, oldIndex, newIndex));
+            }
+        }
+    };
+
+    // Content for loop
+    const renderList = () => {
+        // Map items to have temporary stable IDs if missing, though we use index fallback in logic.
+        // Ideally items should have IDs. BookEditor assigns IDs? 
+        // We will assume index-based key for display if id missing, but for SortableContext we need strings.
+        // Let's generate IDs on the fly? No, that causes re-renders.
+        // We rely on ID. If BookItem has no ID, we use `item-${idx}`
+        const itemsWithIds = page.items.map((item, idx) => ({ ...item, id: item.id || `item-${idx}` }));
+
+        return (
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                <SortableContext
+                    items={itemsWithIds}
+                    strategy={verticalListSortingStrategy}
+                >
+                    {itemsWithIds.map((item, idx) => (
+                        <SortableItemWrapper key={item.id} id={item.id}>
+                            <div
+                                onClick={(e) => {
+                                    // prevent drag click? 
+                                    // onItemClick needs to fire. dnd-kit handles click vs drag via activationConstraint.
+                                    e.stopPropagation();
+                                    onItemClick?.(idx);
+                                }}
+                                className={clsx(
+                                    "cursor-pointer hover:bg-blue-50/50 transition-colors rounded p-1 border border-transparent group relative",
+                                    selectedItemIdx === idx && "bg-blue-50/80 border-blue-200"
+                                )}
+                            >
+                                {/* Drag Handle or whole item draggable? Whole item. */}
+                                {renderItem(item, settings)}
+                            </div>
+                        </SortableItemWrapper>
+                    ))}
+                </SortableContext>
+            </DndContext>
+        );
+    };
+
     return (
         <div
             className={clsx(
@@ -53,21 +144,24 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
 
                 {/* Items */}
                 <div className="flex-1">
-                    {page.items.map((item, idx) => (
-                        <div
-                            key={idx}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onItemClick?.(idx);
-                            }}
-                            className={clsx(
-                                "cursor-pointer hover:bg-blue-50/50 transition-colors rounded p-1 border border-transparent",
-                                selectedItemIdx === idx && "bg-blue-50/80 border-blue-200"
-                            )}
-                        >
-                            {renderItem(item, settings)}
-                        </div>
-                    ))}
+                    {/* If reorder active? Always active? */}
+                    {onReorder ? renderList() : (
+                        page.items.map((item, idx) => (
+                            <div
+                                key={idx}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onItemClick?.(idx);
+                                }}
+                                className={clsx(
+                                    "cursor-pointer hover:bg-blue-50/50 transition-colors rounded p-1 border border-transparent",
+                                    selectedItemIdx === idx && "bg-blue-50/80 border-blue-200"
+                                )}
+                            >
+                                {renderItem(item, settings)}
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 {/* Page Number */}
@@ -80,11 +174,8 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
 };
 
 function renderItem(item: BookItem, settings: BookSettings) {
-    // Compute effective styles (Individual override > Global default)
     const getStyle = (key: 'arabicSize' | 'urduSize' | 'englishSize' | 'headingSize', baseRem: number) => {
-        // If item has specific override
         if (item.styles && item.styles[key]) return `${item.styles[key]}rem`;
-        // Else global
         return `${settings.globalStyles[key] || baseRem}rem`;
     };
 
