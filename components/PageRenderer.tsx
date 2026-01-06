@@ -226,6 +226,15 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                 >
                     {item.heading_urdu || item.arabic || 'Section'}
                 </div>
+                {item.heading_english && (
+                    <div
+                        className={clsx("section-title-english transition-colors rounded mt-1", selectedSubField === 'heading_english' && "bg-yellow-100 ring-2 ring-yellow-400")}
+                        style={{ ...styles.english, fontSize: `calc(${englishSize} * 1.1)`, fontStyle: 'italic' }}
+                        onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('heading_english'); }}
+                    >
+                        {item.heading_english}
+                    </div>
+                )}
             </div>
         );
     }
