@@ -46,6 +46,7 @@ export interface BookItem {
     // Individual Style Overrides (Delta from global)
     // If undefined, follows global. If set, overrides.
     styles?: {
+        [key: string]: any;
         arabicSize?: number; // e.g. 1.2
         urduSize?: number;
         englishSize?: number;
@@ -68,6 +69,7 @@ export interface BookItem {
         englishLineHeight?: number;
         headingLineHeight?: number;
     }
+    [key: string]: any;
 }
 
 export interface BookPage {

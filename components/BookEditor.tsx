@@ -579,6 +579,43 @@ export default function BookEditor({ initialData }: EditorProps) {
         // Scroll into view if needed? Usually browser handles selection focus
     };
 
+    const addItem = (type: string) => {
+        if (!selectedPageId) {
+            alert("Please select a page first.");
+            return;
+        }
+
+        const newItem: BookItem = {
+            id: `item-${Date.now()}`,
+            type: type
+        };
+
+        // Pre-populate based on type
+        if (type === 'heading') {
+            newItem.heading_urdu = 'نئی سرخی';
+            newItem.heading_english = 'New Heading';
+        } else if (type === 'dua' || type === 'quran') {
+            newItem.arabic = 'عربی متن';
+            newItem.urdu = 'اردو ترجمہ';
+            newItem.english = 'English Translation';
+        } else if (type === 'text') {
+            newItem.content_urdu = 'اردو تحریر';
+            newItem.content_english = 'English Text';
+        } else if (type === 'instruction') {
+            newItem.content_urdu = 'ہدایت';
+        }
+
+        const newPages = pages.map(p => {
+            if (p.id === selectedPageId) {
+                return { ...p, items: [...p.items, newItem] };
+            }
+            return p;
+        });
+
+        updatePagesWithHistory(newPages);
+        setSelectedItem({ pageId: selectedPageId, itemIdx: newPages.find(p => p.id === selectedPageId)!.items.length - 1 });
+    };
+
     // --- Keyboard Shortcuts ---
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -670,10 +707,8 @@ export default function BookEditor({ initialData }: EditorProps) {
                                             <button onClick={() => updateItem('styles', undefined, false)} title="Reset styles" className="text-purple-400 hover:text-purple-600"><RefreshCcw size={12} /></button>
                                         </h3>
 
-                                        {/* Dynamic Controls based on selectedSubField */}
                                         {selectedItem?.subField && (
                                             <div className="space-y-4">
-                                                {/* Font Size */}
                                                 {(selectedItem.subField.includes('arabic') || selectedItem.subField.includes('name')) && (
                                                     <>
                                                         <StyleSlider label="Arabic Size" value={activeItem.styles?.arabicSize || settings.globalStyles.arabicSize} onChange={(v) => updateItem('arabicSize', v, true)} />
@@ -692,33 +727,16 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                         <StyleSlider label="English Spacing" min={1.0} max={4.0} unit="" value={activeItem.styles?.englishLineHeight || settings.globalStyles.englishLineHeight} onChange={(v) => updateItem('englishLineHeight', v, true)} />
                                                     </>
                                                 )}
-
                                                 <div className="h-px bg-purple-200/50 my-2"></div>
-
-                                                {/* Alignment */}
                                                 <div>
                                                     <label className="text-[10px] uppercase font-bold text-purple-400 mb-1 block">Alignment</label>
                                                     <div className="flex bg-white rounded border p-1 gap-1">
                                                         {['left', 'center', 'right', 'justify'].map((align: any) => (
-                                                            <button
-                                                                key={align}
-                                                                onClick={() => {
-                                                                    const sub = selectedItem!.subField!;
-                                                                    const key = sub.includes('arabic') ? 'arabicAlign' :
-                                                                        (sub.includes('heading') && sub.includes('english')) ? 'englishAlign' : // Custom for English Heading
-                                                                            sub.includes('heading') ? 'headingAlign' :
-                                                                                sub.includes('urdu') ? 'urduAlign' : 'englishAlign';
-                                                                    updateItem(key, align, true);
-                                                                }}
-                                                                className={clsx("p-1 rounded flex-1 flex justify-center hover:bg-purple-50",
-                                                                    // @ts-ignore
-                                                                    (activeItem.styles?.[`${selectedItem!.subField!.includes('arabic') ? 'arabic' :
-                                                                        (selectedItem!.subField!.includes('heading') && selectedItem!.subField!.includes('english')) ? 'english' :
-                                                                            selectedItem!.subField!.includes('heading') ? 'heading' :
-                                                                                selectedItem!.subField!.includes('urdu') ? 'urdu' :
-                                                                                    'english'}Align`] || 'center') === align ? "bg-purple-100 text-purple-700" : "text-gray-400"
-                                                                )}
-                                                            >
+                                                            <button key={align} onClick={() => {
+                                                                const sub = selectedItem!.subField!;
+                                                                const key = sub.includes('arabic') ? 'arabicAlign' : (sub.includes('heading') && sub.includes('english')) ? 'englishAlign' : sub.includes('heading') ? 'headingAlign' : sub.includes('urdu') ? 'urduAlign' : 'englishAlign';
+                                                                updateItem(key, align, true);
+                                                            }} className={clsx("p-1 rounded flex-1 flex justify-center hover:bg-purple-50", (activeItem.styles?.[`${selectedItem!.subField!.includes('arabic') ? 'arabic' : (selectedItem!.subField!.includes('heading') && selectedItem!.subField!.includes('english')) ? 'english' : selectedItem!.subField!.includes('heading') ? 'heading' : selectedItem!.subField!.includes('urdu') ? 'urdu' : 'english'}Align`] || 'center') === align ? "bg-purple-100 text-purple-700" : "text-gray-400")}>
                                                                 {align === 'left' && <AlignLeft size={14} />}
                                                                 {align === 'center' && <AlignCenter size={14} />}
                                                                 {align === 'right' && <AlignRight size={14} />}
@@ -727,28 +745,15 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                         ))}
                                                     </div>
                                                 </div>
-
-                                                {/* Font Select */}
                                                 <div>
                                                     <label className="text-[10px] uppercase font-bold text-purple-400 mb-1 block mt-2">Font Family</label>
-                                                    <select
-                                                        className="w-full text-xs p-1 border rounded"
-                                                        onChange={(e) => {
-                                                            const sub = selectedItem!.subField!;
-                                                            const key = sub.includes('arabic') ? 'arabicFont' :
-                                                                (sub.includes('heading') && sub.includes('english')) ? 'englishFont' :
-                                                                    sub.includes('heading') ? 'urduFont' : // Headings use Urdu font usually
-                                                                        sub.includes('urdu') ? 'urduFont' : 'englishFont';
-                                                            updateItem(key, e.target.value, true);
-                                                        }}
-                                                        // @ts-ignore
-                                                        value={activeItem.styles?.[`${selectedItem!.subField!.includes('arabic') ? 'arabic' :
-                                                            (selectedItem!.subField!.includes('heading') && selectedItem!.subField!.includes('english')) ? 'english' :
-                                                                selectedItem!.subField!.includes('heading') ? 'urdu' :
-                                                                    selectedItem!.subField!.includes('urdu') ? 'urdu' : 'english'}Font`] || ''}
-                                                    >
+                                                    <select className="w-full text-xs p-1 border rounded" onChange={(e) => {
+                                                        const sub = selectedItem!.subField!;
+                                                        const key = sub.includes('arabic') ? 'arabicFont' : (sub.includes('heading') && sub.includes('english')) ? 'englishFont' : sub.includes('heading') ? 'urduFont' : sub.includes('urdu') ? 'urduFont' : 'englishFont';
+                                                        updateItem(key, e.target.value, true);
+                                                    }} value={activeItem.styles?.[`${selectedItem!.subField!.includes('arabic') ? 'arabic' : (selectedItem!.subField!.includes('heading') && selectedItem!.subField!.includes('english')) ? 'english' : selectedItem!.subField!.includes('heading') ? 'urdu' : selectedItem!.subField!.includes('urdu') ? 'urdu' : 'english'}Font`] || ''}>
                                                         <option value="">Default (Global)</option>
-                                                        {selectedItem.subField.includes('arabic') && (
+                                                        {selectedItem.subField?.includes('arabic') && (
                                                             <>
                                                                 <option value="Scheherazade New">Scheherazade New</option>
                                                                 <option value="Amiri">Amiri</option>
@@ -756,13 +761,13 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                                 <option value="Lateef">Lateef</option>
                                                             </>
                                                         )}
-                                                        {(selectedItem.subField.includes('urdu') || (selectedItem.subField.includes('heading') && !selectedItem.subField.includes('english'))) && (
+                                                        {(selectedItem.subField?.includes('urdu') || (selectedItem.subField?.includes('heading') && !selectedItem.subField?.includes('english'))) && (
                                                             <>
                                                                 <option value="Noto Nastaliq Urdu">Noto Nastaliq Urdu</option>
                                                                 <option value="Gulzar">Gulzar</option>
                                                             </>
                                                         )}
-                                                        {(selectedItem.subField.includes('english') || selectedItem.subField.includes('roman') || (selectedItem.subField.includes('heading') && selectedItem.subField.includes('english'))) && (
+                                                        {(selectedItem.subField?.includes('english') || selectedItem.subField?.includes('roman') || (selectedItem.subField?.includes('heading') && selectedItem.subField?.includes('english'))) && (
                                                             <>
                                                                 <option value="Inter">Inter</option>
                                                                 <option value="Roboto">Roboto</option>
@@ -774,27 +779,16 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                 </div>
                                             </div>
                                         )}
-
-                                        {!selectedItem?.subField && (
-                                            <div className="text-xs text-gray-500 italic">Select a specific part (double click) to style it individually.</div>
-                                        )}
+                                        {!selectedItem?.subField && <div className="text-xs text-gray-500 italic">Select a part (double click) to style it.</div>}
                                     </div>
 
                                     <div className="space-y-3">
                                         <div className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b pb-1">Edit Text</div>
                                         {['arabic', 'roman', 'urdu', 'english', 'fazilat', 'fazilat_english', 'heading_urdu', 'heading_english', 'content_urdu', 'content_english'].map(field => (
-                                            // @ts-ignore
-                                            (activeItem[field] !== undefined || field.includes('heading')) && (
+                                            (activeItem[field] !== undefined || (field.includes('heading') && activeItem.type === 'heading')) && (
                                                 <div key={field}>
                                                     <label className="block text-[10px] font-medium text-gray-500 mb-1 capitalize">{field.replace('_', ' ')}</label>
-                                                    <textarea
-                                                        className="w-full text-sm p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
-                                                        rows={field === 'arabic' ? 3 : 2}
-                                                        dir={field.includes('english') || field === 'roman' ? 'ltr' : 'rtl'}
-                                                        // @ts-ignore
-                                                        value={activeItem[field] || ''}
-                                                        onChange={(e) => updateItem(field, e.target.value)}
-                                                    />
+                                                    <textarea className="w-full text-sm p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" rows={field === 'arabic' ? 3 : 2} dir={field.includes('english') || field === 'roman' ? 'ltr' : 'rtl'} value={activeItem[field] || ''} onChange={(e) => updateItem(field, e.target.value)} />
                                                 </div>
                                             )
                                         ))}
@@ -803,30 +797,50 @@ export default function BookEditor({ initialData }: EditorProps) {
                                     <div className="pt-4 border-t border-gray-100">
                                         <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Item Actions</h4>
                                         <div className="grid grid-cols-2 gap-2 mb-2">
-                                            <button onClick={() => moveActiveItemToPage(-1)} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700">
-                                                <ArrowUp size={14} /> Move to Prev Page
-                                            </button>
-                                            <button onClick={() => moveActiveItemToPage(1)} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700">
-                                                <ArrowDown size={14} /> Move to Next Page
-                                            </button>
+                                            <button onClick={() => moveActiveItemToPage(-1)} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700"><ArrowUp size={14} /> Prev Page</button>
+                                            <button onClick={() => moveActiveItemToPage(1)} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700"><ArrowDown size={14} /> Next Page</button>
                                         </div>
                                         <div className="grid grid-cols-3 gap-2">
-                                            <button onClick={handlePushToNext} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex flex-col items-center gap-1 text-gray-400" title="Split Page (Push all below)">
-                                                <ArrowDown size={14} /> Split Page
-                                            </button>
-                                            <button onClick={handlePullToPrev} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex flex-col items-center gap-1 text-gray-400" title="Pull Content">
-                                                <ArrowUp size={14} /> Pull Content
-                                            </button>
-                                            <button onClick={deleteItem} className="py-2 px-1 bg-white border border-red-200 hover:bg-red-50 text-[10px] rounded flex flex-col items-center gap-1 text-red-600">
-                                                <Trash size={14} /> Delete
-                                            </button>
+                                            <button onClick={handlePushToNext} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex flex-col items-center gap-1 text-gray-400"><ArrowDown size={14} /> Split</button>
+                                            <button onClick={handlePullToPrev} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex flex-col items-center gap-1 text-gray-400"><ArrowUp size={14} /> Pull</button>
+                                            <button onClick={deleteItem} className="py-2 px-1 bg-white border border-red-200 hover:bg-red-50 text-[10px] rounded flex flex-col items-center gap-1 text-red-600"><Trash size={14} /> Delete</button>
+                                        </div>
+                                        <div className="pt-4 border-t border-gray-100">
+                                            <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Add Content</h4>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button onClick={() => addItem('heading')} className="py-2 px-1 bg-blue-50 border border-blue-100 hover:bg-blue-100 text-[10px] rounded flex items-center justify-center gap-1 text-blue-700 font-bold"><PlusCircle size={14} /> Heading</button>
+                                                <button onClick={() => addItem('dua')} className="py-2 px-1 bg-green-50 border border-green-100 hover:bg-green-100 text-[10px] rounded flex items-center justify-center gap-1 text-green-700 font-bold"><PlusCircle size={14} /> Dua/Quran</button>
+                                                <button onClick={() => addItem('text')} className="py-2 px-1 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700"><PlusCircle size={14} /> Text</button>
+                                                <button onClick={() => addItem('instruction')} className="py-2 px-1 bg-orange-50 border border-orange-100 hover:bg-orange-100 text-[10px] rounded flex items-center justify-center gap-1 text-orange-700"><PlusCircle size={14} /> Instr.</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="p-8 text-center text-gray-400 border-2 border-dashed rounded-xl">
-                                    <Type className="mx-auto mb-2 opacity-50" />
-                                    <p className="text-sm">Select an item on the page to edit its content and individual style.</p>
+                                <div className="space-y-6">
+                                    <div className="p-8 text-center text-gray-400 border-2 border-dashed rounded-xl">
+                                        <Type className="mx-auto mb-2 opacity-50" />
+                                        <p className="text-sm italic">Select an item to edit, or add a new one below.</p>
+                                    </div>
+                                    {selectedPageId && (
+                                        <div className="bg-white p-4 rounded-xl border shadow-sm space-y-3">
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b pb-1">Add to Page {pages.find(p => p.id === selectedPageId)?.pageNumber}</div>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                <button onClick={() => addItem('heading')} className="py-3 px-4 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-xs rounded-lg flex items-center gap-3 text-blue-700 font-bold transition-all transform hover:scale-[1.02]">
+                                                    <div className="p-2 bg-blue-500 text-white rounded-lg"><LayoutTemplate size={16} /></div>
+                                                    <div className="flex flex-col items-start leading-tight"><span>Add Heading</span><span className="text-[10px] font-normal opacity-60">Section title</span></div>
+                                                </button>
+                                                <button onClick={() => addItem('dua')} className="py-3 px-4 bg-green-50 border border-green-200 hover:bg-green-100 text-xs rounded-lg flex items-center gap-3 text-green-700 font-bold transition-all transform hover:scale-[1.02]">
+                                                    <div className="p-2 bg-green-500 text-white rounded-lg"><PlusCircle size={16} /></div>
+                                                    <div className="flex flex-col items-start leading-tight"><span>Add Dua / Quran</span><span className="text-[10px] font-normal opacity-60">Arabic text</span></div>
+                                                </button>
+                                                <button onClick={() => addItem('text')} className="py-3 px-4 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-xs rounded-lg flex items-center gap-3 text-gray-700 font-bold transition-all transform hover:scale-[1.02]">
+                                                    <div className="p-2 bg-gray-500 text-white rounded-lg"><Type size={16} /></div>
+                                                    <div className="flex flex-col items-start leading-tight"><span>Add Text / Note</span><span className="text-[10px] font-normal opacity-60">Simple paragraph</span></div>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </>
