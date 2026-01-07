@@ -11,7 +11,7 @@ import {
     Image as ImageIcon, Type, LayoutTemplate,
     RefreshCcw, ArrowDown, ArrowUp, Trash, RotateCcw,
     AlignLeft, AlignCenter, AlignRight, AlignJustify,
-    PlusCircle, Plus, Crown
+    PlusCircle, Plus, Crown, ArrowUpDown
 } from 'lucide-react';
 
 interface EditorProps {
@@ -517,7 +517,6 @@ export default function BookEditor({ initialData }: EditorProps) {
             setSelectedPageId(null);
         }
     };
-
     const deletePageByNumber = (num: number) => {
         const pageToDelete = pages.find(p => p.pageNumber === num);
         if (!pageToDelete) {
@@ -546,6 +545,28 @@ export default function BookEditor({ initialData }: EditorProps) {
                 setSelectedPageId(null);
             }
         }
+    };
+
+    const movePage = (targetNumber: number) => {
+        if (!selectedPageId) return;
+        const sourceIdx = pages.findIndex(p => p.id === selectedPageId);
+        if (sourceIdx === -1) return;
+
+        const targetIdx = Math.max(0, Math.min(targetNumber - 1, pages.length - 1));
+        if (sourceIdx === targetIdx) return;
+
+        const newPages = [...pages];
+        const [movedPage] = newPages.splice(sourceIdx, 1);
+        newPages.splice(targetIdx, 0, movedPage);
+
+        // Renumber
+        const renumbered = newPages.map((p, i) => ({
+            ...p,
+            pageNumber: i + 1
+        }));
+
+        updatePagesWithHistory(renumbered);
+        // sourceId remains the same, so selection is preserved
     };
 
     const addNewPage = (index: number) => {
@@ -1007,6 +1028,33 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                 className="flex-1 py-1 px-2 border border-red-200 text-red-600 rounded text-[10px] font-bold hover:bg-red-50"
                                             >
                                                 Delete Page By #
+                                            </button>
+                                        </div>
+
+                                        <div className="h-px bg-gray-100 my-4"></div>
+                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Move Selected Page</h4>
+                                        <div className="flex gap-2">
+                                            <input
+                                                id="movePageTarget"
+                                                type="number"
+                                                placeholder="Target #"
+                                                className="w-20 text-xs p-1 border rounded"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const num = parseInt((e.target as HTMLInputElement).value);
+                                                        if (num) movePage(num);
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    const input = document.getElementById('movePageTarget') as HTMLInputElement;
+                                                    const num = parseInt(input.value);
+                                                    if (num) movePage(num);
+                                                }}
+                                                className="flex-1 py-1 px-2 bg-blue-50 border border-blue-200 text-blue-600 rounded text-[10px] font-bold hover:bg-blue-100 flex items-center justify-center gap-1"
+                                            >
+                                                <ArrowUpDown size={12} /> Move to Position
                                             </button>
                                         </div>
                                     </div>
