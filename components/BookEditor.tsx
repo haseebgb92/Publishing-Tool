@@ -10,7 +10,8 @@ import {
     Download, Upload, Settings, Save, FileJson,
     Image as ImageIcon, Type, LayoutTemplate,
     RefreshCcw, ArrowDown, ArrowUp, Trash, RotateCcw,
-    AlignLeft, AlignCenter, AlignRight, AlignJustify
+    AlignLeft, AlignCenter, AlignRight, AlignJustify,
+    PlusCircle, Plus
 } from 'lucide-react';
 
 interface EditorProps {
@@ -547,6 +548,30 @@ export default function BookEditor({ initialData }: EditorProps) {
         }
     };
 
+    const addNewPage = (index: number) => {
+        const newPageId = `page-${Date.now()}`;
+        const newPage: BookPage = {
+            id: newPageId,
+            pageNumber: index + 1,
+            items: []
+        };
+
+        const newPages = [...pages];
+        newPages.splice(index, 0, newPage);
+
+        // Renumber
+        const renumbered = newPages.map((p, i) => ({
+            ...p,
+            pageNumber: i + 1
+        }));
+
+        updatePagesWithHistory(renumbered);
+        setSelectedPageId(newPageId);
+        setSelectedItem(null);
+
+        // Scroll into view if needed? Usually browser handles selection focus
+    };
+
     // --- Keyboard Shortcuts ---
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -1015,48 +1040,69 @@ export default function BookEditor({ initialData }: EditorProps) {
 
             {/* --- Main Workspace --- */}
             <div className="flex-1 overflow-y-auto bg-gray-200/50 p-8 flex flex-col items-center gap-8 print-container scroll-smooth">
-                {pages.map((page, idx) => (
-                    <div
-                        key={page.id}
-                        className="relative group print-page-wrapper"
-                        onClick={() => setSelectedPageId(page.id)}
+                <div className="w-full flex justify-center mb-4 no-print opacity-0 hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={() => addNewPage(0)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-full text-xs font-bold shadow-lg hover:bg-blue-600 transition-all transform hover:scale-105"
                     >
-                        <div className="absolute top-2 -left-12 flex flex-col items-center gap-2 no-print group">
-                            <div className="text-gray-400 font-mono text-sm opacity-50">
-                                {page.pageNumber}
+                        <Plus size={16} /> Add Page at Start
+                    </button>
+                </div>
+
+                {pages.map((page, idx) => (
+                    <React.Fragment key={page.id}>
+                        <div
+                            className="relative group print-page-wrapper"
+                            onClick={() => setSelectedPageId(page.id)}
+                        >
+                            <div className="absolute top-2 -left-12 flex flex-col items-center gap-2 no-print group">
+                                <div className="text-gray-400 font-mono text-sm opacity-50">
+                                    {page.pageNumber}
+                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedPageId(page.id);
+                                        // Small delay to ensure state update if needed, but deletePage handles confirm
+                                        setTimeout(deletePage, 10);
+                                    }}
+                                    className="p-2 bg-white border border-gray-200 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
+                                    title="Delete Page"
+                                >
+                                    <Trash size={14} />
+                                </button>
                             </div>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedPageId(page.id);
-                                    // Small delay to ensure state update if needed, but deletePage handles confirm
-                                    setTimeout(deletePage, 10);
+
+                            <PageRenderer
+                                page={page}
+                                settings={settings}
+                                isActive={selectedPageId === page.id}
+                                selectedItemIdx={selectedPageId === page.id && selectedItem?.pageId === page.id ? selectedItem.itemIdx : null}
+                                selectedSubField={selectedPageId === page.id && selectedItem?.pageId === page.id ? selectedItem.subField : null}
+                                onItemClick={(itemIdx, subField) => {
+                                    // 1st click: Select whole item. 2nd click: select sub-field
+                                    if (selectedItem?.pageId === page.id && selectedItem?.itemIdx === itemIdx) {
+                                        setSelectedItem({ pageId: page.id, itemIdx, subField });
+                                    } else {
+                                        setSelectedItem({ pageId: page.id, itemIdx });
+                                    }
+                                    setActiveTab('content'); // Auto switch to edit content
                                 }}
-                                className="p-2 bg-white border border-gray-200 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
-                                title="Delete Page"
-                            >
-                                <Trash size={14} />
-                            </button>
+                                onReorder={(items) => handleReorder(page.id, items)}
+                            />
                         </div>
 
-                        <PageRenderer
-                            page={page}
-                            settings={settings}
-                            isActive={selectedPageId === page.id}
-                            selectedItemIdx={selectedPageId === page.id && selectedItem?.pageId === page.id ? selectedItem.itemIdx : null}
-                            selectedSubField={selectedPageId === page.id && selectedItem?.pageId === page.id ? selectedItem.subField : null}
-                            onItemClick={(itemIdx, subField) => {
-                                // 1st click: Select whole item. 2nd click: select sub-field
-                                if (selectedItem?.pageId === page.id && selectedItem?.itemIdx === itemIdx) {
-                                    setSelectedItem({ pageId: page.id, itemIdx, subField });
-                                } else {
-                                    setSelectedItem({ pageId: page.id, itemIdx });
-                                }
-                                setActiveTab('content'); // Auto switch to edit content
-                            }}
-                            onReorder={(items) => handleReorder(page.id, items)}
-                        />
-                    </div>
+                        {/* Add Page Button Between Pages */}
+                        <div className="w-full flex justify-center py-2 no-print opacity-0 hover:opacity-100 transition-opacity">
+                            <button
+                                onClick={() => addNewPage(idx + 1)}
+                                className="group flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-full shadow-md hover:w-32 hover:rounded-lg transition-all duration-300 overflow-hidden"
+                            >
+                                <Plus size={18} className="shrink-0" />
+                                <span className="text-[10px] font-bold uppercase whitespace-nowrap ml-0 group-hover:ml-2 opacity-0 group-hover:opacity-100 transition-all">Add Page</span>
+                            </button>
+                        </div>
+                    </React.Fragment>
                 ))}
                 {pages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-center text-gray-400">
