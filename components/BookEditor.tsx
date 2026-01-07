@@ -11,7 +11,7 @@ import {
     Image as ImageIcon, Type, LayoutTemplate,
     RefreshCcw, ArrowDown, ArrowUp, Trash, RotateCcw,
     AlignLeft, AlignCenter, AlignRight, AlignJustify,
-    PlusCircle, Plus
+    PlusCircle, Plus, Crown
 } from 'lucide-react';
 
 interface EditorProps {
@@ -594,6 +594,9 @@ export default function BookEditor({ initialData }: EditorProps) {
         if (type === 'heading') {
             newItem.heading_urdu = 'نئی سرخی';
             newItem.heading_english = 'New Heading';
+        } else if (type === 'section_title') {
+            newItem.heading_urdu = 'نئی فصل / عنوان';
+            newItem.heading_english = 'New Section Title';
         } else if (type === 'dua' || type === 'quran') {
             newItem.arabic = 'عربی متن';
             newItem.urdu = 'اردو ترجمہ';
@@ -808,6 +811,7 @@ export default function BookEditor({ initialData }: EditorProps) {
                                         <div className="pt-4 border-t border-gray-100">
                                             <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Add Content</h4>
                                             <div className="grid grid-cols-2 gap-2">
+                                                <button onClick={() => addItem('section_title')} className="py-2 px-1 bg-yellow-50 border border-yellow-100 hover:bg-yellow-100 text-[10px] rounded flex items-center justify-center gap-1 text-yellow-700 font-bold"><Crown size={14} /> Sec Title</button>
                                                 <button onClick={() => addItem('heading')} className="py-2 px-1 bg-blue-50 border border-blue-100 hover:bg-blue-100 text-[10px] rounded flex items-center justify-center gap-1 text-blue-700 font-bold"><PlusCircle size={14} /> Heading</button>
                                                 <button onClick={() => addItem('dua')} className="py-2 px-1 bg-green-50 border border-green-100 hover:bg-green-100 text-[10px] rounded flex items-center justify-center gap-1 text-green-700 font-bold"><PlusCircle size={14} /> Dua/Quran</button>
                                                 <button onClick={() => addItem('text')} className="py-2 px-1 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700"><PlusCircle size={14} /> Text</button>
@@ -826,6 +830,10 @@ export default function BookEditor({ initialData }: EditorProps) {
                                         <div className="bg-white p-4 rounded-xl border shadow-sm space-y-3">
                                             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b pb-1">Add to Page {pages.find(p => p.id === selectedPageId)?.pageNumber}</div>
                                             <div className="grid grid-cols-1 gap-2">
+                                                <button onClick={() => addItem('section_title')} className="py-3 px-4 bg-yellow-50 border border-yellow-200 hover:bg-yellow-100 text-xs rounded-lg flex items-center gap-3 text-yellow-700 font-bold transition-all transform hover:scale-[1.02]">
+                                                    <div className="p-2 bg-yellow-500 text-white rounded-lg"><Crown size={16} /></div>
+                                                    <div className="flex flex-col items-start leading-tight"><span>Add Section Title</span><span className="text-[10px] font-normal opacity-60">Large chapter heading</span></div>
+                                                </button>
                                                 <button onClick={() => addItem('heading')} className="py-3 px-4 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-xs rounded-lg flex items-center gap-3 text-blue-700 font-bold transition-all transform hover:scale-[1.02]">
                                                     <div className="p-2 bg-blue-500 text-white rounded-lg"><LayoutTemplate size={16} /></div>
                                                     <div className="flex flex-col items-start leading-tight"><span>Add Heading</span><span className="text-[10px] font-normal opacity-60">Section title</span></div>
@@ -837,6 +845,10 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                 <button onClick={() => addItem('text')} className="py-3 px-4 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-xs rounded-lg flex items-center gap-3 text-gray-700 font-bold transition-all transform hover:scale-[1.02]">
                                                     <div className="p-2 bg-gray-500 text-white rounded-lg"><Type size={16} /></div>
                                                     <div className="flex flex-col items-start leading-tight"><span>Add Text / Note</span><span className="text-[10px] font-normal opacity-60">Simple paragraph</span></div>
+                                                </button>
+                                                <button onClick={() => addItem('instruction')} className="py-3 px-4 bg-orange-50 border border-orange-200 hover:bg-orange-100 text-xs rounded-lg flex items-center gap-3 text-orange-700 font-bold transition-all transform hover:scale-[1.02]">
+                                                    <div className="p-2 bg-orange-500 text-white rounded-lg"><PlusCircle size={16} /></div>
+                                                    <div className="flex flex-col items-start leading-tight"><span>Add Instruction</span><span className="text-[10px] font-normal opacity-60">How to perform</span></div>
                                                 </button>
                                             </div>
                                         </div>
