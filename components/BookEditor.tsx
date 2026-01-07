@@ -553,7 +553,14 @@ export default function BookEditor({ initialData }: EditorProps) {
         const newPage: BookPage = {
             id: newPageId,
             pageNumber: index + 1,
-            items: []
+            items: [
+                {
+                    id: `item-${Date.now()}`,
+                    type: 'heading',
+                    heading_urdu: 'نئی سرخی',
+                    heading_english: 'New Heading'
+                }
+            ]
         };
 
         const newPages = [...pages];
