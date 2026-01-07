@@ -279,7 +279,18 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                         {item.urdu && <div className={getFieldClass('urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('urdu'); }} style={styles.urdu}>{item.urdu}</div>}
                         {item.content_urdu && !item.urdu && <div className={getFieldClass('content_urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_urdu'); }} style={styles.urdu}>{item.content_urdu}</div>}
                         {item.english && <div className={getFieldClass('english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('english'); }} style={styles.english}>{item.english}</div>}
-                        {item.content_english && !item.english && <div className={getFieldClass('content_english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_english'); }} style={styles.english}>{item.content_english}</div>}
+                        {item.fazilat && (
+                            <div className={clsx(getFieldClass('fazilat'), "mt-2 pt-2 border-t border-gray-200 italic text-blue-900 section-fazilat")} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('fazilat'); }} style={styles.urdu}>
+                                <span className="text-[10px] font-bold uppercase not-italic opacity-40 block mb-1">Fazilat</span>
+                                {item.fazilat}
+                            </div>
+                        )}
+                        {item.fazilat_english && (
+                            <div className={clsx(getFieldClass('fazilat_english'), "mt-1 italic text-blue-800 section-fazilat-english")} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('fazilat_english'); }} style={styles.english}>
+                                <span className="text-[10px] font-bold uppercase not-italic opacity-40 block mb-1">Fazilat (English)</span>
+                                {item.fazilat_english}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -360,6 +371,18 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
             {item.content_urdu && !item.urdu && <div className={getFieldClass('content_urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_urdu'); }} style={styles.urdu}>{item.content_urdu}</div>}
             {item.english && <div className={getFieldClass('english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('english'); }} style={styles.english}>{item.english}</div>}
             {item.content_english && !item.english && <div className={getFieldClass('content_english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_english'); }} style={styles.english}>{item.content_english}</div>}
+            {item.fazilat && (
+                <div className={clsx(getFieldClass('fazilat'), "mt-2 pt-2 border-t border-gray-100 italic text-blue-900 section-fazilat")} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('fazilat'); }} style={styles.urdu}>
+                    <span className="text-[10px] font-bold uppercase not-italic opacity-40 block mb-1">Fazilat</span>
+                    {item.fazilat}
+                </div>
+            )}
+            {item.fazilat_english && (
+                <div className={clsx(getFieldClass('fazilat_english'), "mt-1 italic text-blue-800 section-fazilat-english")} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('fazilat_english'); }} style={styles.english}>
+                    <span className="text-[10px] font-bold uppercase not-italic opacity-40 block mb-1">Fazilat (English)</span>
+                    {item.fazilat_english}
+                </div>
+            )}
         </div>
     );
 }

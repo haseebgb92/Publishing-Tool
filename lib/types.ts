@@ -35,6 +35,8 @@ export interface BookItem {
     answer_english?: string;
     virtue_urdu?: string;
     virtue_english?: string;
+    fazilat?: string;
+    fazilat_english?: string;
     names?: { arabic: string; roman: string; english: string; urdu: string }[];
 
     // TOC

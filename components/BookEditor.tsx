@@ -750,7 +750,7 @@ export default function BookEditor({ initialData }: EditorProps) {
 
                                     <div className="space-y-3">
                                         <div className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b pb-1">Edit Text</div>
-                                        {['arabic', 'urdu', 'english', 'heading_urdu', 'heading_english'].map(field => (
+                                        {['arabic', 'roman', 'urdu', 'english', 'fazilat', 'fazilat_english', 'heading_urdu', 'heading_english', 'content_urdu', 'content_english'].map(field => (
                                             // @ts-ignore
                                             (activeItem[field] !== undefined || field.includes('heading')) && (
                                                 <div key={field}>
@@ -758,7 +758,7 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                     <textarea
                                                         className="w-full text-sm p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                         rows={field === 'arabic' ? 3 : 2}
-                                                        dir={field.includes('english') ? 'ltr' : 'rtl'}
+                                                        dir={field.includes('english') || field === 'roman' ? 'ltr' : 'rtl'}
                                                         // @ts-ignore
                                                         value={activeItem[field] || ''}
                                                         onChange={(e) => updateItem(field, e.target.value)}
