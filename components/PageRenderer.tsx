@@ -194,7 +194,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
     const headingLineHeight = getStyleVal('headingLineHeight', 1.4);
 
     const styles = {
-        arabic: { fontSize: arabicSize, textAlign: arabicAlign, fontFamily: arabicFont, lineHeight: arabicLineHeight },
+        arabic: { fontSize: arabicSize, textAlign: arabicAlign, fontFamily: arabicFont, direction: 'rtl' as 'rtl', lineHeight: arabicLineHeight },
         urdu: { fontSize: urduSize, textAlign: urduAlign, fontFamily: urduFont, direction: 'rtl' as 'rtl', lineHeight: urduLineHeight },
         english: { fontSize: englishSize, textAlign: englishAlign, fontFamily: englishFont, direction: 'ltr' as 'ltr', lineHeight: englishLineHeight },
         heading: { fontSize: headingSize, textAlign: headingAlign, fontFamily: urduFont, direction: 'rtl' as 'rtl', lineHeight: headingLineHeight }
@@ -274,7 +274,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                 {/* Render other fields if present */}
                 {(item.arabic || item.urdu || item.english || item.roman || item.content_urdu || item.content_english) && (
                     <div className="mt-2 pl-4 border-l-2 border-gray-100/50 space-y-2">
-                        {item.arabic && <div className={getFieldClass('arabic')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('arabic'); }} style={styles.arabic}>{item.arabic}</div>}
+                        {item.arabic && <div className={getFieldClass('arabic')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('arabic'); }} style={styles.arabic} dir="rtl">{item.arabic}</div>}
                         {item.roman && <div className={getFieldClass('roman')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('roman'); }} style={styles.english}>{item.roman}</div>}
                         {item.urdu && <div className={getFieldClass('urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('urdu'); }} style={styles.urdu}>{item.urdu}</div>}
                         {item.content_urdu && !item.urdu && <div className={getFieldClass('content_urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_urdu'); }} style={styles.urdu}>{item.content_urdu}</div>}
@@ -320,7 +320,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                             <div
                                 className={clsx("arabic-text !p-0 !text-3xl font-bold rounded px-1 transition-all mb-2", selectedSubField === arabicKey && "bg-yellow-100 ring-2 ring-yellow-400 z-30")}
                                 style={{ ...styles.arabic, fontSize: arabicSize, textAlign: 'center', lineHeight: 2 }}
-                                onDoubleClick={(e) => { e.stopPropagation(); handleSubClick(arabicKey); }}
+                                dir="rtl"
                             >
                                 {name.arabic}
                             </div>
@@ -365,7 +365,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                 }
             }}
         >
-            {item.arabic && <div className={getFieldClass('arabic')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('arabic'); }} style={styles.arabic}>{item.arabic}</div>}
+            {item.arabic && <div className={getFieldClass('arabic')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('arabic'); }} style={styles.arabic} dir="rtl">{item.arabic}</div>}
             {item.roman && <div className={getFieldClass('roman')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('roman'); }} style={styles.english}>{item.roman}</div>}
             {item.urdu && <div className={getFieldClass('urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('urdu'); }} style={styles.urdu}>{item.urdu}</div>}
             {item.content_urdu && !item.urdu && <div className={getFieldClass('content_urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_urdu'); }} style={styles.urdu}>{item.content_urdu}</div>}
