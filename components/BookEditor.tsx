@@ -652,26 +652,45 @@ export default function BookEditor({ initialData }: EditorProps) {
 
         const lines = text.split('\n').filter(line => line.trim() !== '');
         const newItems: BookItem[] = lines.map((line, i) => {
-            // Try to split by tab or multiple spaces
+            // Split by tab or multiple spaces
             let parts = line.split(/\t/);
-            if (parts.length < 2) {
-                // Try splitting by last space followed by digits
-                const lastSpaceIdx = line.lastIndexOf(' ');
-                if (lastSpaceIdx !== -1) {
-                    const possiblePage = line.substring(lastSpaceIdx + 1).trim();
-                    if (/^\d+$/.test(possiblePage)) {
-                        parts = [line.substring(0, lastSpaceIdx).trim(), possiblePage];
-                    }
-                }
-            }
+            if (parts.length < 2) parts = line.split(/ {2,}/);
 
-            const topic = parts[0]?.trim() || 'Topic';
-            const pageNum = parts[1]?.trim() || '';
+            let english = '';
+            let urdu = '';
+            let pageNum = '';
+
+            if (parts.length >= 3) {
+                english = parts[0]?.trim();
+                pageNum = parts[1]?.trim();
+                urdu = parts[2]?.trim();
+            } else if (parts.length === 2) {
+                // Determine if first part is probably English or Urdu
+                const p0 = parts[0]?.trim() || '';
+                const p1 = parts[1]?.trim() || '';
+
+                // If p1 is a number, p0 is the topic
+                if (/^\d+$/.test(p1)) {
+                    pageNum = p1;
+                    // Guess language: if contains Arabic/Urdu chars, it's Urdu
+                    if (/[\u0600-\u06FF]/.test(p0)) {
+                        urdu = p0;
+                    } else {
+                        english = p0;
+                    }
+                } else {
+                    // Not a standard format, just put everything in first part
+                    urdu = line.trim();
+                }
+            } else {
+                urdu = line.trim();
+            }
 
             return {
                 id: `toc-${Date.now()}-${i}`,
                 type: 'toc_entry',
-                urdu: topic,
+                urdu: urdu,
+                english: english,
                 toc_page: pageNum
             };
         });

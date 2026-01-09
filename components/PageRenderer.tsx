@@ -203,13 +203,32 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
 
     if (item.type === 'toc_entry') {
         return (
-            <div className="flex items-baseline justify-between py-1 border-b border-gray-300 border-dotted mb-1">
-                <div className="flex-1 text-right">
-                    <span className="font-bold text-lg font-urdu">{item.urdu}</span>
-                    {item.english && <span className="text-xs text-gray-500 ml-2 font-sans">({item.english})</span>}
+            <div className="flex items-center gap-4 py-2 border-b border-gray-200 border-dotted mb-1 group hover:bg-blue-50/30 transition-colors">
+                {/* English - Left */}
+                <div
+                    className={clsx("flex-1 text-left transition-colors rounded px-1", selectedSubField === 'english' && "bg-yellow-100 ring-2 ring-yellow-400")}
+                    style={styles.english}
+                    onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('english'); }}
+                >
+                    {item.english || <span className="text-gray-300 italic text-[10px]">No English</span>}
                 </div>
-                <div className="w-12 text-left text-sm font-mono text-gray-700 pl-2">
+
+                {/* Page Number - Center */}
+                <div
+                    className={clsx("w-14 text-center font-bold text-sm text-gray-700 bg-gray-100 rounded py-1 transition-colors", selectedSubField === 'toc_page' && "bg-yellow-100 ring-2 ring-yellow-400")}
+                    onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('toc_page'); }}
+                >
                     {item.toc_page}
+                </div>
+
+                {/* Urdu - Right */}
+                <div
+                    className={clsx("flex-1 text-right transition-colors rounded px-1", selectedSubField === 'urdu' && "bg-yellow-100 ring-2 ring-yellow-400")}
+                    style={styles.urdu}
+                    onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('urdu'); }}
+                    dir="rtl"
+                >
+                    {item.urdu || <span className="text-gray-300 italic text-[10px]">بلا عنوان</span>}
                 </div>
             </div>
         );
