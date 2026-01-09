@@ -539,8 +539,8 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | un
                         <span className="text-xs italic">No image uploaded</span>
                     </div>
                 )}
-                {/* Caption Container - Only render if has content or is 'image_caption' type */}
-                {(item.image_caption_urdu || item.image_caption_english || item.type === 'image_caption') && (
+                {/* Caption Container - Only render if has content */}
+                {(item.image_caption_urdu || item.image_caption_english) && (
                     <div className="w-full space-y-1 mt-2">
                         <EditableField
                             value={item.image_caption_urdu}
@@ -550,7 +550,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | un
                             dir="rtl"
                             isEditing={isSelected && selectedSubField === 'image_caption_urdu'}
                             onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('image_caption_urdu'); }}
-                            placeholder={item.type === 'image_caption' ? "Urdu Caption" : ""}
+                            placeholder="Urdu Caption"
                         />
 
                         <EditableField
@@ -560,7 +560,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | un
                             className={clsx("text-center text-xs opacity-60 transition-colors rounded px-1", getFieldClass('image_caption_english'))}
                             isEditing={isSelected && selectedSubField === 'image_caption_english'}
                             onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('image_caption_english'); }}
-                            placeholder={item.type === 'image_caption' ? "English Caption" : ""}
+                            placeholder="English Caption"
                         />
                     </div>
                 )}
