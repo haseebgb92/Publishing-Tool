@@ -3,7 +3,8 @@ import {
     FileText, Save, Download, RotateCcw, Copy, Clipboard,
     Type, Image as ImageIcon, Table as TableIcon, List,
     Heading, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-    Settings, LayoutTemplate, PlusCircle, Grid, Box, ImagePlus, Eraser, Trash
+    Settings, LayoutTemplate, PlusCircle, Grid, Box, ImagePlus, Eraser, Trash,
+    ZoomIn, ZoomOut
 } from 'lucide-react';
 import clsx from 'clsx';
 import { BookSettings, BookItem } from '@/lib/types';

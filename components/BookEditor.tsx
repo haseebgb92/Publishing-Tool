@@ -10,9 +10,10 @@ import clsx from 'clsx';
 import {
     Download, Upload, Settings, Save, FileJson,
     Image as ImageIcon, Type, LayoutTemplate,
-    RefreshCcw, ArrowDown, ArrowUp, Trash, RotateCcw,
+    RefreshCcw, ArrowDown, ArrowUp, Trash, RotateCcw, RotateCw,
     AlignLeft, AlignCenter, AlignRight, AlignJustify,
-    PlusCircle, Plus, Crown, ArrowUpDown, List
+    PlusCircle, Plus, Crown, ArrowUpDown, List,
+    ChevronRight
 } from 'lucide-react';
 
 interface EditorProps {
@@ -28,6 +29,8 @@ export default function BookEditor({ initialData }: EditorProps) {
     const [activeTab, setActiveTab] = useState<'layout' | 'typography' | 'content' | 'assets'>('content');
     const [isExporting, setIsExporting] = useState(false);
     const [bulkTOCText, setBulkTOCText] = useState('');
+    const [zoomLevel, setZoomLevel] = useState(1);
+    const [expandedSections, setExpandedSections] = useState<string[]>(['content', 'typography', 'box']);
 
     const [settings, setSettings] = useState<BookSettings>({
         pageSize: { width: 210, height: 297, name: 'A4' },
@@ -809,6 +812,8 @@ export default function BookEditor({ initialData }: EditorProps) {
                     onUpdateSettings={setSettings}
                     activeItem={activeItem || null}
                     onUpdateItem={(field, val, isStyle) => updateItem(field, val, isStyle)}
+                    zoomLevel={zoomLevel}
+                    setZoomLevel={setZoomLevel}
                     onAction={(action, payload) => {
                         if (action === 'save') {
                             const blob = new Blob([JSON.stringify({ pages, settings }, null, 2)], { type: 'application/json' });

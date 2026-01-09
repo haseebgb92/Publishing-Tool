@@ -578,10 +578,23 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | un
                                 {row.map((cell, cIdx) => (
                                     <td
                                         key={cIdx}
-                                        className={clsx("p-2", item.styles?.tableBorder && "border border-gray-300")}
-                                        onDoubleClick={(e) => { e.stopPropagation(); if (onItemClick && itemIdx !== undefined) onItemClick(itemIdx); }} // Future: Cell edit
+                                        className={clsx("p-2 relative group", item.styles?.tableBorder && "border border-gray-300")}
+                                        style={{ minWidth: '50px' }}
                                     >
-                                        {cell}
+                                        <EditableField
+                                            value={cell}
+                                            onChange={(v: string) => {
+                                                if (!item.tableData) return;
+                                                const newData = item.tableData.map(r => [...r]);
+                                                newData[rIdx][cIdx] = v;
+                                                onUpdateItem?.(itemIdx!, 'tableData', newData);
+                                            }}
+                                            style={{ width: '100%', background: 'transparent' }}
+                                            className="w-full min-h-[1.5em]"
+                                            isEditing={isSelected} // Tables are always "editing enabled" when selected for simplicity, or we could track subFields
+                                            onDoubleClick={(e: any) => { e.stopPropagation(); if (onItemClick && itemIdx !== undefined) onItemClick(itemIdx); }}
+                                            placeholder="..."
+                                        />
                                     </td>
                                 ))}
                             </tr>
@@ -617,7 +630,7 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | un
                 backgroundColor: item.styles?.backgroundColor,
                 borderWidth: item.styles?.borderWidth ? `${item.styles.borderWidth}px` : undefined,
                 borderColor: item.styles?.borderColor,
-                borderStyle: item.styles?.borderWidth ? 'solid' : undefined,
+                borderStyle: (item.styles?.borderStyle as any) || (item.styles?.borderWidth ? 'solid' : undefined),
                 borderRadius: item.styles?.borderRadius ? `${item.styles.borderRadius}px` : undefined,
                 padding: item.styles?.padding ? `${item.styles.padding}px` : undefined,
             }}
@@ -631,83 +644,105 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | un
                 }
             }}
         >
-            <EditableField
-                value={item.arabic}
-                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'arabic', v)}
-                style={styles.arabic}
-                className={getFieldClass('arabic')}
-                dir="rtl"
-                isEditing={isSelected && selectedSubField === 'arabic'}
-                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('arabic'); }}
-                placeholder="Arabic Text"
-            />
-            <EditableField
-                value={item.roman}
-                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'roman', v)}
-                style={styles.english}
-                className={getFieldClass('roman')}
-                isEditing={isSelected && selectedSubField === 'roman'}
-                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('roman'); }}
-                placeholder="Roman English"
-            />
-            <EditableField
-                value={item.urdu}
-                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'urdu', v)}
-                style={styles.urdu}
-                className={getFieldClass('urdu')}
-                dir="rtl"
-                isEditing={isSelected && selectedSubField === 'urdu'}
-                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('urdu'); }}
-                placeholder="Urdu"
-            />
-            <EditableField
-                value={item.content_urdu}
-                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'content_urdu', v)}
-                style={styles.urdu}
-                className={getFieldClass('content_urdu')}
-                dir="rtl"
-                isEditing={isSelected && selectedSubField === 'content_urdu'}
-                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('content_urdu'); }}
-                placeholder="Urdu Content"
-            />
-            <EditableField
-                value={item.english}
-                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'english', v)}
-                style={styles.english}
-                className={getFieldClass('english')}
-                isEditing={isSelected && selectedSubField === 'english'}
-                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('english'); }}
-                placeholder="English"
-            />
-            <EditableField
-                value={item.content_english}
-                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'content_english', v)}
-                style={styles.english}
-                className={getFieldClass('content_english')}
-                isEditing={isSelected && selectedSubField === 'content_english'}
-                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('content_english'); }}
-                placeholder="English Content"
-            />
-            {/* Generic Fazilat Editing */}
-            <EditableField
-                value={item.fazilat}
-                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'fazilat', v)}
-                style={styles.urdu}
-                className={clsx(getFieldClass('fazilat'), "mt-2 pt-2 border-t border-gray-100 italic text-blue-900 section-fazilat")}
-                dir="rtl"
-                isEditing={isSelected && selectedSubField === 'fazilat'}
-                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('fazilat'); }}
-                placeholder="Fazilat (Urdu)"
-            />
-            <EditableField
-                value={item.fazilat_english}
-                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'fazilat_english', v)}
-                style={styles.english}
-                className={clsx(getFieldClass('fazilat_english'), "mt-1 italic text-blue-800 section-fazilat-english")}
-                isEditing={isSelected && selectedSubField === 'fazilat_english'}
-                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('fazilat_english'); }}
-                placeholder="Fazilat (English)"
-            />
+            {(isSelected || item.arabic) && (
+                <EditableField
+                    value={item.arabic}
+                    onChange={(v: string) => onUpdateItem?.(itemIdx!, 'arabic', v)}
+                    style={styles.arabic}
+                    className={getFieldClass('arabic')}
+                    dir="rtl"
+                    isEditing={isSelected && selectedSubField === 'arabic'}
+                    onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('arabic'); }}
+                    placeholder="Arabic Text"
+                />
+            )}
+
+            {(isSelected || item.roman) && (
+                <EditableField
+                    value={item.roman}
+                    onChange={(v: string) => onUpdateItem?.(itemIdx!, 'roman', v)}
+                    style={styles.english}
+                    className={getFieldClass('roman')}
+                    isEditing={isSelected && selectedSubField === 'roman'}
+                    onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('roman'); }}
+                    placeholder="Roman English"
+                />
+            )}
+
+            {(isSelected || item.urdu) && (
+                <EditableField
+                    value={item.urdu}
+                    onChange={(v: string) => onUpdateItem?.(itemIdx!, 'urdu', v)}
+                    style={styles.urdu}
+                    className={getFieldClass('urdu')}
+                    dir="rtl"
+                    isEditing={isSelected && selectedSubField === 'urdu'}
+                    onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('urdu'); }}
+                    placeholder="Urdu"
+                />
+            )}
+
+            {(isSelected || item.content_urdu) && (
+                <EditableField
+                    value={item.content_urdu}
+                    onChange={(v: string) => onUpdateItem?.(itemIdx!, 'content_urdu', v)}
+                    style={styles.urdu}
+                    className={getFieldClass('content_urdu')}
+                    dir="rtl"
+                    isEditing={isSelected && selectedSubField === 'content_urdu'}
+                    onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('content_urdu'); }}
+                    placeholder="Urdu Content"
+                />
+            )}
+
+            {(isSelected || item.english) && (
+                <EditableField
+                    value={item.english}
+                    onChange={(v: string) => onUpdateItem?.(itemIdx!, 'english', v)}
+                    style={styles.english}
+                    className={getFieldClass('english')}
+                    isEditing={isSelected && selectedSubField === 'english'}
+                    onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('english'); }}
+                    placeholder="English"
+                />
+            )}
+
+            {(isSelected || item.content_english) && (
+                <EditableField
+                    value={item.content_english}
+                    onChange={(v: string) => onUpdateItem?.(itemIdx!, 'content_english', v)}
+                    style={styles.english}
+                    className={getFieldClass('content_english')}
+                    isEditing={isSelected && selectedSubField === 'content_english'}
+                    onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('content_english'); }}
+                    placeholder="English Content"
+                />
+            )}
+
+            {/* Generic Fazilat Editing - Only if present or selected */}
+            {(isSelected || item.fazilat) && (
+                <EditableField
+                    value={item.fazilat}
+                    onChange={(v: string) => onUpdateItem?.(itemIdx!, 'fazilat', v)}
+                    style={styles.urdu}
+                    className={clsx(getFieldClass('fazilat'), "mt-2 pt-2 border-t border-gray-100 italic text-blue-900 section-fazilat")}
+                    dir="rtl"
+                    isEditing={isSelected && selectedSubField === 'fazilat'}
+                    onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('fazilat'); }}
+                    placeholder="Fazilat (Urdu)"
+                />
+            )}
+            {(isSelected || item.fazilat_english) && (
+                <EditableField
+                    value={item.fazilat_english}
+                    onChange={(v: string) => onUpdateItem?.(itemIdx!, 'fazilat_english', v)}
+                    style={styles.english}
+                    className={clsx(getFieldClass('fazilat_english'), "mt-1 italic text-blue-800 section-fazilat-english")}
+                    isEditing={isSelected && selectedSubField === 'fazilat_english'}
+                    onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('fazilat_english'); }}
+                    placeholder="Fazilat (English)"
+                />
+            )}
         </div>
     );
 }
