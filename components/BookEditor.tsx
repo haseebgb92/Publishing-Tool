@@ -835,6 +835,17 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                         ))}
                                                     </div>
                                                 </div>
+
+                                                {activeItem.type === 'image' && (
+                                                    <div className="pt-2 border-t mt-2">
+                                                        <StyleSlider
+                                                            label="Image Scale (%)"
+                                                            min={10} max={100} unit="%"
+                                                            value={activeItem.styles?.imageWidth || 100}
+                                                            onChange={(v) => updateItem('imageWidth', v, true)}
+                                                        />
+                                                    </div>
+                                                )}
                                                 <div>
                                                     <label className="text-[10px] uppercase font-bold text-purple-400 mb-1 block mt-2">Font Family</label>
                                                     <select className="w-full text-xs p-1 border rounded" onChange={(e) => {
@@ -874,7 +885,7 @@ export default function BookEditor({ initialData }: EditorProps) {
 
                                     <div className="space-y-3">
                                         <div className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b pb-1">Edit Text</div>
-                                        {['arabic', 'roman', 'urdu', 'english', 'fazilat', 'fazilat_english', 'heading_urdu', 'heading_english', 'content_urdu', 'content_english', 'image_caption_urdu', 'image_caption_english'].map(field => (
+                                        {['arabic', 'roman', 'urdu', 'english', 'fazilat', 'fazilat_english', 'heading_urdu', 'heading_english', 'content_urdu', 'content_english', 'image_caption_urdu', 'image_caption_english', 'toc_page'].map(field => (
                                             (activeItem[field] !== undefined || (field.includes('heading') && activeItem.type === 'heading')) && (
                                                 <div key={field}>
                                                     <label className="block text-[10px] font-medium text-gray-500 mb-1 capitalize">{field.replace('_', ' ')}</label>
@@ -1116,6 +1127,29 @@ export default function BookEditor({ initialData }: EditorProps) {
                                             onChange={(e) => setSettings({ ...settings, sectionTitleOffset: parseInt(e.target.value) || 0 })}
                                             className="w-full text-xs p-1 border rounded"
                                         />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] text-gray-400 uppercase mb-1">Page Background Color</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="color"
+                                                value={pages.find(p => p.id === selectedPageId)?.backgroundColor || '#ffffff'}
+                                                onChange={(e) => {
+                                                    const newPages = pages.map(p => p.id === selectedPageId ? { ...p, backgroundColor: e.target.value } : p);
+                                                    updatePagesWithHistory(newPages);
+                                                }}
+                                                className="w-10 h-8 rounded border p-0 cursor-pointer"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    const newPages = pages.map(p => p.id === selectedPageId ? { ...p, backgroundColor: '#ffffff' } : p);
+                                                    updatePagesWithHistory(newPages);
+                                                }}
+                                                className="text-[10px] text-gray-400 hover:text-gray-600 font-bold uppercase"
+                                            >
+                                                Reset to White
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 

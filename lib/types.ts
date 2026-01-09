@@ -73,7 +73,8 @@ export interface BookItem {
         urduLineHeight?: number;
         englishLineHeight?: number;
         headingLineHeight?: number;
-    }
+        imageWidth?: number; // percentage (0-100)
+    };
     [key: string]: any;
 }
 
@@ -83,7 +84,7 @@ export interface BookPage {
     sectionTitle?: string;
     items: BookItem[];
     // Page specific override?
-    background?: string;
+    backgroundColor?: string;
 }
 
 export interface BookSettings {

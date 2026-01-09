@@ -118,7 +118,9 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                 paddingTop: `${settings.margins.top}px`,
                 paddingBottom: `${settings.margins.bottom}px`,
                 paddingLeft: `${settings.margins.left}px`,
-                paddingRight: `${settings.margins.right}px`
+                paddingRight: `${settings.margins.right}px`,
+                backgroundColor: page.backgroundColor || 'white',
+                position: 'relative'
             }}
         >
             {/* Background Image */}
@@ -386,7 +388,10 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                         src={item.image_src}
                         alt="Book Content"
                         className="max-w-full h-auto rounded border shadow-sm transition-transform hover:scale-[1.01]"
-                        style={{ maxHeight: '600px' }}
+                        style={{
+                            maxHeight: '600px',
+                            width: item.styles?.imageWidth ? `${item.styles.imageWidth}%` : '100%'
+                        }}
                     />
                 ) : (
                     <div className="w-full h-40 bg-gray-50 border-2 border-dashed border-gray-200 rounded flex flex-col items-center justify-center text-gray-400">
