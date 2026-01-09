@@ -50,7 +50,7 @@ export default function BookEditor({ initialData }: EditorProps) {
             headingLineHeight: 1.4
         },
         sectionTitleOffset: 0,
-        pageBackgroundImage: '/bg-page.jpg',
+        pageBackgroundImage: '',
         headingBackgroundImage: '',
         showOutlines: true
     });
@@ -636,6 +636,34 @@ export default function BookEditor({ initialData }: EditorProps) {
         } else if (type === 'image') {
             newItem.image_src = '';
             newItem.image_caption_urdu = 'تصویر کا عنوان';
+        } else if (type === 'image_caption') {
+            newItem.type = 'image';
+            newItem.image_src = '';
+            newItem.image_caption_urdu = 'کیپشن';
+            newItem.image_caption_english = 'Caption';
+        } else if (type === 'text_box') {
+            newItem.type = 'text';
+            newItem.english = 'New Text Box';
+            newItem.styles = {
+                ...newItem.styles,
+                backgroundColor: '#ffffff',
+                borderColor: '#000000',
+                borderWidth: 1,
+                padding: 10,
+                borderRadius: 4
+            };
+        } else if (type === 'text_arabic') {
+            newItem.type = 'text';
+            newItem.arabic = 'نص جديد';
+            newItem.styles = { ...newItem.styles, arabicAlign: 'center', arabicSize: 1.5 };
+        } else if (type === 'text_urdu') {
+            newItem.type = 'text';
+            newItem.urdu = 'نیا متن';
+            newItem.styles = { ...newItem.styles, urduAlign: 'right', urduSize: 1.2 };
+        } else if (type === 'text_english') {
+            newItem.type = 'text';
+            newItem.english = 'New Text';
+            newItem.styles = { ...newItem.styles, englishAlign: 'left', englishSize: 1.0 };
         } else if (type === 'table') {
             newItem.tableData = [
                 ['Header 1', 'Header 2', 'Header 3'],
@@ -809,10 +837,28 @@ export default function BookEditor({ initialData }: EditorProps) {
                         if (action === 'add_item') addItem(payload);
                         if (action === 'set_page_background') {
                             if (!selectedPageId) return alert("Select a page first");
+
+                            // Handle File Upload for Image
+                            if (payload.type === 'image_upload') {
+                                const file = payload.value;
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    const result = e.target?.result as string;
+                                    const newPages = pages.map(p => {
+                                        if (p.id === selectedPageId) {
+                                            return { ...p, backgroundImage: result, backgroundColor: undefined };
+                                        }
+                                        return p;
+                                    });
+                                    updatePagesWithHistory(newPages);
+                                };
+                                reader.readAsDataURL(file);
+                                return;
+                            }
+
                             const newPages = pages.map(p => {
                                 if (p.id === selectedPageId) {
                                     if (payload.type === 'color') return { ...p, backgroundColor: payload.value, backgroundImage: undefined };
-                                    if (payload.type === 'image') return { ...p, backgroundImage: payload.value, backgroundColor: undefined };
                                     if (payload.type === 'clear') return { ...p, backgroundImage: undefined, backgroundColor: undefined };
                                 }
                                 return p;

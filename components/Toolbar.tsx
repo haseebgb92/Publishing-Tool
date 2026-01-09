@@ -118,15 +118,27 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     <>
                         <ToolButton icon={PlusCircle} label="New Page" onClick={() => onAction('add_page')} />
                         <div className="w-px h-10 bg-gray-200 mx-2" />
+
+                        {/* Simple Text Boxes */}
+                        <div className="flex flex-col gap-1 mr-2">
+                            <div className="text-[9px] uppercase font-bold text-gray-400 text-center">Text</div>
+                            <div className="flex gap-1">
+                                <button className="px-2 py-1 text-xs border rounded bg-gray-50 hover:bg-gray-100 font-serif" onClick={() => onAction('add_item', 'text_arabic')} title="Arabic Text">ع</button>
+                                <button className="px-2 py-1 text-xs border rounded bg-gray-50 hover:bg-gray-100 font-serif" onClick={() => onAction('add_item', 'text_urdu')} title="Urdu Text">اردو</button>
+                                <button className="px-2 py-1 text-xs border rounded bg-gray-50 hover:bg-gray-100 font-sans" onClick={() => onAction('add_item', 'text_english')} title="English Text">En</button>
+                            </div>
+                        </div>
+
+                        <ToolButton icon={Type} label="Full Para" onClick={() => onAction('add_item', 'text')} />
                         <ToolButton icon={Heading} label="Heading" onClick={() => onAction('add_item', 'heading')} />
-                        <ToolButton icon={Type} label="Text Paragraph" onClick={() => onAction('add_item', 'text')} />
+                        <div className="w-px h-10 bg-gray-200 mx-2" />
                         <ToolButton icon={ImageIcon} label="Image" onClick={() => onAction('add_item', 'image')} />
+                        <ToolButton icon={ImagePlus} label="Img+Cap" onClick={() => onAction('add_item', 'image_caption')} />
                         <div className="w-px h-10 bg-gray-200 mx-2" />
                         <ToolButton icon={TableIcon} label="Table" onClick={() => onAction('add_item', 'table')} />
                         <ToolButton icon={List} label="List" onClick={() => onAction('add_item', 'list')} />
                         <div className="w-px h-10 bg-gray-200 mx-2" />
-                        <ToolButton icon={LayoutTemplate} label="Section Title" onClick={() => onAction('add_item', 'section_title')} />
-                        <ToolButton icon={Box} label="Text Box" onClick={() => onAction('add_item', 'text_box')} />
+                        <ToolButton icon={LayoutTemplate} label="Section" onClick={() => onAction('add_item', 'section_title')} />
                         <ToolButton icon={Settings} label="Quran/Dua" onClick={() => onAction('add_item', 'dua')} />
                     </>
                 )}
@@ -183,16 +195,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                                 >
                                     <div className="w-5 h-5 border rounded" style={{ background: 'linear-gradient(135deg, #fff 50%, #eee 50%)' }} />
                                 </button>
-                                <button
-                                    className="p-1 hover:bg-gray-100 rounded text-gray-600"
+                                <label
+                                    className="p-1 hover:bg-gray-100 rounded text-gray-600 cursor-pointer"
                                     title="Set Image"
-                                    onClick={() => {
-                                        const url = prompt("Enter image URL:");
-                                        if (url) onAction('set_page_background', { type: 'image', value: url });
-                                    }}
                                 >
                                     <ImagePlus size={20} />
-                                </button>
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            if (e.target.files?.[0]) {
+                                                onAction('set_page_background', { type: 'image_upload', value: e.target.files[0] });
+                                                e.target.value = ''; // Reset
+                                            }
+                                        }}
+                                    />
+                                </label>
                                 <button
                                     className="p-1 hover:bg-red-50 text-red-500 rounded"
                                     title="Clear Background"
