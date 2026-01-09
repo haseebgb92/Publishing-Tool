@@ -15,6 +15,7 @@ interface PageRendererProps {
     selectedSubField?: string | null;
     onItemClick?: (itemIdx: number, subField?: string) => void;
     onReorder?: (items: BookItem[]) => void;
+    onUpdateItem?: (itemIdx: number, field: string, value: any) => void;
 }
 
 // Sortable Item Wrapper
@@ -50,7 +51,8 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
     selectedItemIdx,
     selectedSubField,
     onItemClick,
-    onReorder
+    onReorder,
+    onUpdateItem
 }) => {
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -97,7 +99,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                                 )}
                             >
                                 {/* Drag Handle or whole item draggable? Whole item. */}
-                                {renderItem(item, settings, idx, selectedItemIdx === idx, selectedItemIdx === idx ? selectedSubField : null, onItemClick)}
+                                {renderItem(item, settings, idx, selectedItemIdx === idx, selectedItemIdx === idx ? selectedSubField : null, onItemClick, onUpdateItem)}
                             </div>
                         </SortableItemWrapper>
                     ))}
@@ -119,12 +121,15 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                 paddingBottom: `${settings.margins.bottom}px`,
                 paddingLeft: `${settings.margins.left}px`,
                 paddingRight: `${settings.margins.right}px`,
-                backgroundColor: page.backgroundColor || 'white',
-                position: 'relative'
+                backgroundColor: page.backgroundColor || (!page.backgroundImage && !settings.pageBackgroundImage ? 'white' : 'transparent'),
+                position: 'relative',
+                backgroundImage: page.backgroundImage ? `url(${page.backgroundImage})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
             }}
         >
-            {/* Background Image */}
-            {settings.pageBackgroundImage && (
+            {/* Background Image (Global) - Only if page doesn't have one */}
+            {!page.backgroundImage && settings.pageBackgroundImage && (
                 <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                     <img src={settings.pageBackgroundImage} className="w-full h-full object-cover" alt="bg" />
                 </div>
@@ -143,7 +148,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                                 selectedItemIdx === idx && "bg-blue-50/80 border-blue-200"
                             )}
                         >
-                            {renderItem(item, settings, idx, selectedItemIdx === idx, selectedItemIdx === idx ? selectedSubField : null, onItemClick)}
+                            {renderItem(item, settings, idx, selectedItemIdx === idx, selectedItemIdx === idx ? selectedSubField : null, onItemClick, onUpdateItem)}
                         </div>
                     ))}
                 </div>
@@ -157,7 +162,47 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
     );
 };
 
-function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | undefined, isSelected: boolean, selectedSubField: string | null | undefined, onItemClick?: (idx: number, sub?: string) => void) {
+// Helper for Inline Editing
+const EditableField = ({ value, onChange, style, className, dir, isEditing, onDoubleClick, placeholder }: any) => {
+    if (isEditing) {
+        return (
+            <textarea
+                value={value || ''}
+                onChange={(e) => onChange(e.target.value)}
+                style={{ ...style, width: '100%', minHeight: '1.5em', resize: 'none', overflow: 'hidden', background: 'rgba(255,255,200,0.2)', outline: 'none' }}
+                className={className}
+                dir={dir}
+                autoFocus
+                placeholder={placeholder}
+                onKeyDown={(e) => e.stopPropagation()} // Prevent editor shortcuts while typing
+                onClick={(e) => e.stopPropagation()}
+                onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = target.scrollHeight + 'px';
+                }}
+                ref={(ref) => {
+                    if (ref) {
+                        ref.style.height = 'auto';
+                        ref.style.height = ref.scrollHeight + 'px';
+                    }
+                }}
+            />
+        );
+    }
+    return (
+        <div
+            className={className}
+            style={style}
+            dir={dir}
+            onDoubleClick={onDoubleClick}
+        >
+            {value || <span className="opacity-30 italic">{placeholder}</span>}
+        </div>
+    );
+};
+
+function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | undefined, isSelected: boolean, selectedSubField: string | null | undefined, onItemClick?: (idx: number, sub?: string) => void, onUpdateItem?: (idx: number, field: string, value: any) => void) {
     const handleSubClick = (sub?: string) => {
         if (onItemClick && itemIdx !== undefined) {
             onItemClick(itemIdx, sub);
@@ -299,27 +344,78 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | un
                     )}
                 </div>
                 {/* Render other fields if present */}
-                {(item.arabic || item.urdu || item.english || item.roman || item.content_urdu || item.content_english) && (
-                    <div className="mt-2 pl-4 border-l-2 border-gray-100/50 space-y-2">
-                        {item.arabic && <div className={getFieldClass('arabic')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('arabic'); }} style={styles.arabic} dir="rtl">{item.arabic}</div>}
-                        {item.roman && <div className={getFieldClass('roman')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('roman'); }} style={styles.english}>{item.roman}</div>}
-                        {item.urdu && <div className={getFieldClass('urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('urdu'); }} style={styles.urdu}>{item.urdu}</div>}
-                        {item.content_urdu && !item.urdu && <div className={getFieldClass('content_urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_urdu'); }} style={styles.urdu}>{item.content_urdu}</div>}
-                        {item.english && <div className={getFieldClass('english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('english'); }} style={styles.english}>{item.english}</div>}
-                        {item.fazilat && (
-                            <div className={clsx(getFieldClass('fazilat'), "mt-2 pt-2 border-t border-gray-200 italic text-blue-900 section-fazilat")} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('fazilat'); }} style={styles.urdu}>
-                                <span className="text-[10px] font-bold uppercase not-italic opacity-40 block mb-1">Fazilat</span>
-                                {item.fazilat}
-                            </div>
-                        )}
-                        {item.fazilat_english && (
-                            <div className={clsx(getFieldClass('fazilat_english'), "mt-1 italic text-blue-800 section-fazilat-english")} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('fazilat_english'); }} style={styles.english}>
-                                <span className="text-[10px] font-bold uppercase not-italic opacity-40 block mb-1">Fazilat (English)</span>
-                                {item.fazilat_english}
-                            </div>
-                        )}
-                    </div>
-                )}
+                {/* Render other fields if present */}
+                <div className="mt-2 pl-4 border-l-2 border-gray-100/50 space-y-2">
+                    <EditableField
+                        value={item.arabic}
+                        onChange={(v: string) => onUpdateItem?.(itemIdx!, 'arabic', v)}
+                        style={styles.arabic}
+                        className={getFieldClass('arabic')}
+                        dir="rtl"
+                        isEditing={isSelected && selectedSubField === 'arabic'}
+                        onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('arabic'); }}
+                        placeholder="Arabic Text"
+                    />
+                    <EditableField
+                        value={item.roman}
+                        onChange={(v: string) => onUpdateItem?.(itemIdx!, 'roman', v)}
+                        style={styles.english}
+                        className={getFieldClass('roman')}
+                        isEditing={isSelected && selectedSubField === 'roman'}
+                        onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('roman'); }}
+                        placeholder="Roman English"
+                    />
+                    <EditableField
+                        value={item.urdu}
+                        onChange={(v: string) => onUpdateItem?.(itemIdx!, 'urdu', v)}
+                        style={styles.urdu}
+                        className={getFieldClass('urdu')}
+                        dir="rtl"
+                        isEditing={isSelected && selectedSubField === 'urdu'}
+                        onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('urdu'); }}
+                        placeholder="Urdu Translation"
+                    />
+                    <EditableField
+                        value={item.content_urdu}
+                        onChange={(v: string) => onUpdateItem?.(itemIdx!, 'content_urdu', v)}
+                        style={styles.urdu}
+                        className={getFieldClass('content_urdu')}
+                        dir="rtl"
+                        isEditing={isSelected && selectedSubField === 'content_urdu'}
+                        onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('content_urdu'); }}
+                        placeholder="Urdu Content"
+                    />
+                    <EditableField
+                        value={item.english}
+                        onChange={(v: string) => onUpdateItem?.(itemIdx!, 'english', v)}
+                        style={styles.english}
+                        className={getFieldClass('english')}
+                        isEditing={isSelected && selectedSubField === 'english'}
+                        onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('english'); }}
+                        placeholder="English Translation"
+                    />
+                    <EditableField
+                        value={item.content_english}
+                        onChange={(v: string) => onUpdateItem?.(itemIdx!, 'content_english', v)}
+                        style={styles.english}
+                        className={getFieldClass('content_english')}
+                        isEditing={isSelected && selectedSubField === 'content_english'}
+                        onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('content_english'); }}
+                        placeholder="English Content"
+                    />
+                    {item.fazilat && (
+                        <div className={clsx(getFieldClass('fazilat'), "mt-2 pt-2 border-t border-gray-200 italic text-blue-900 section-fazilat")} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('fazilat'); }} style={styles.urdu}>
+                            <span className="text-[10px] font-bold uppercase not-italic opacity-40 block mb-1">Fazilat</span>
+                            {item.fazilat}
+                        </div>
+                    )}
+                    {item.fazilat_english && (
+                        <div className={clsx(getFieldClass('fazilat_english'), "mt-1 italic text-blue-800 section-fazilat-english")} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('fazilat_english'); }} style={styles.english}>
+                            <span className="text-[10px] font-bold uppercase not-italic opacity-40 block mb-1">Fazilat (English)</span>
+                            {item.fazilat_english}
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }
@@ -476,7 +572,15 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | un
 
     return (
         <div
-            className="content-item mb-4 space-y-2"
+            className={clsx("content-item mb-4 space-y-2", isSelected && !item.styles?.borderWidth && "ring-1 ring-blue-200 rounded")}
+            style={{
+                backgroundColor: item.styles?.backgroundColor,
+                borderWidth: item.styles?.borderWidth ? `${item.styles.borderWidth}px` : undefined,
+                borderColor: item.styles?.borderColor,
+                borderStyle: item.styles?.borderWidth ? 'solid' : undefined,
+                borderRadius: item.styles?.borderRadius ? `${item.styles.borderRadius}px` : undefined,
+                padding: item.styles?.padding ? `${item.styles.padding}px` : undefined,
+            }}
             onClick={(e) => {
                 // Only trigger if clicking the container itself, not a child field
                 if (e.target === e.currentTarget) {
@@ -487,12 +591,63 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | un
                 }
             }}
         >
-            {item.arabic && <div className={getFieldClass('arabic')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('arabic'); }} style={styles.arabic} dir="rtl">{item.arabic}</div>}
-            {item.roman && <div className={getFieldClass('roman')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('roman'); }} style={styles.english}>{item.roman}</div>}
-            {item.urdu && <div className={getFieldClass('urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('urdu'); }} style={styles.urdu}>{item.urdu}</div>}
-            {item.content_urdu && !item.urdu && <div className={getFieldClass('content_urdu')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_urdu'); }} style={styles.urdu}>{item.content_urdu}</div>}
-            {item.english && <div className={getFieldClass('english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('english'); }} style={styles.english}>{item.english}</div>}
-            {item.content_english && !item.english && <div className={getFieldClass('content_english')} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('content_english'); }} style={styles.english}>{item.content_english}</div>}
+            <EditableField
+                value={item.arabic}
+                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'arabic', v)}
+                style={styles.arabic}
+                className={getFieldClass('arabic')}
+                dir="rtl"
+                isEditing={isSelected && selectedSubField === 'arabic'}
+                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('arabic'); }}
+                placeholder="Arabic Text"
+            />
+            <EditableField
+                value={item.roman}
+                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'roman', v)}
+                style={styles.english}
+                className={getFieldClass('roman')}
+                isEditing={isSelected && selectedSubField === 'roman'}
+                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('roman'); }}
+                placeholder="Roman English"
+            />
+            <EditableField
+                value={item.urdu}
+                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'urdu', v)}
+                style={styles.urdu}
+                className={getFieldClass('urdu')}
+                dir="rtl"
+                isEditing={isSelected && selectedSubField === 'urdu'}
+                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('urdu'); }}
+                placeholder="Urdu"
+            />
+            <EditableField
+                value={item.content_urdu}
+                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'content_urdu', v)}
+                style={styles.urdu}
+                className={getFieldClass('content_urdu')}
+                dir="rtl"
+                isEditing={isSelected && selectedSubField === 'content_urdu'}
+                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('content_urdu'); }}
+                placeholder="Urdu Content"
+            />
+            <EditableField
+                value={item.english}
+                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'english', v)}
+                style={styles.english}
+                className={getFieldClass('english')}
+                isEditing={isSelected && selectedSubField === 'english'}
+                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('english'); }}
+                placeholder="English"
+            />
+            <EditableField
+                value={item.content_english}
+                onChange={(v: string) => onUpdateItem?.(itemIdx!, 'content_english', v)}
+                style={styles.english}
+                className={getFieldClass('content_english')}
+                isEditing={isSelected && selectedSubField === 'content_english'}
+                onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('content_english'); }}
+                placeholder="English Content"
+            />
             {item.fazilat && (
                 <div className={clsx(getFieldClass('fazilat'), "mt-2 pt-2 border-t border-gray-100 italic text-blue-900 section-fazilat")} onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('fazilat'); }} style={styles.urdu}>
                     <span className="text-[10px] font-bold uppercase not-italic opacity-40 block mb-1">Fazilat</span>

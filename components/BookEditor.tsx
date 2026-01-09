@@ -12,7 +12,7 @@ import {
     Image as ImageIcon, Type, LayoutTemplate,
     RefreshCcw, ArrowDown, ArrowUp, Trash, RotateCcw,
     AlignLeft, AlignCenter, AlignRight, AlignJustify,
-    PlusCircle, Plus, Crown, ArrowUpDown
+    PlusCircle, Plus, Crown, ArrowUpDown, List
 } from 'lucide-react';
 
 interface EditorProps {
@@ -473,13 +473,17 @@ export default function BookEditor({ initialData }: EditorProps) {
         setSelectedItem(null); // Deselect
     };
 
-    const updateItem = (field: string, value: any, isStyle = false) => {
-        if (!selectedItem) return;
-        const pIdx = pages.findIndex(p => p.id === selectedItem.pageId);
+    const updateItem = (field: string, value: any, isStyle = false, targetPageId?: string, targetItemIdx?: number) => {
+        const pId = targetPageId || selectedItem?.pageId;
+        const iIdx = targetItemIdx !== undefined ? targetItemIdx : selectedItem?.itemIdx;
+
+        if (!pId || iIdx === undefined) return;
+
+        const pIdx = pages.findIndex(p => p.id === pId);
         if (pIdx === -1) return;
 
         const newPages = [...pages];
-        const item = { ...newPages[pIdx].items[selectedItem.itemIdx] };
+        const item = { ...newPages[pIdx].items[iIdx] };
 
         if (isStyle) {
             item.styles = { ...(item.styles || {}), [field]: value };
@@ -488,7 +492,7 @@ export default function BookEditor({ initialData }: EditorProps) {
             item[field] = value;
         }
 
-        newPages[pIdx].items[selectedItem.itemIdx] = item;
+        newPages[pIdx].items[iIdx] = item;
         setPages(newPages); // Keep setPages for immediate updates without adding to history
     };
 
@@ -642,6 +646,17 @@ export default function BookEditor({ initialData }: EditorProps) {
         } else if (type === 'list') {
             newItem.listItems = ['Item 1', 'Item 2', 'Item 3'];
             newItem.listType = 'bullet';
+        } else if (type === 'text_box') {
+            newItem.type = 'text'; // It's just a text item with styles
+            newItem.content_english = 'Text Box Content';
+            newItem.styles = {
+                ...newItem.styles,
+                backgroundColor: '#ffffff',
+                borderColor: '#000000',
+                borderWidth: 1,
+                padding: 10,
+                borderRadius: 4
+            };
         }
 
         const newPages = pages.map(p => {
@@ -792,6 +807,18 @@ export default function BookEditor({ initialData }: EditorProps) {
                         }
                         if (action === 'add_page') addNewPage(pages.length);
                         if (action === 'add_item') addItem(payload);
+                        if (action === 'set_page_background') {
+                            if (!selectedPageId) return alert("Select a page first");
+                            const newPages = pages.map(p => {
+                                if (p.id === selectedPageId) {
+                                    if (payload.type === 'color') return { ...p, backgroundColor: payload.value, backgroundImage: undefined };
+                                    if (payload.type === 'image') return { ...p, backgroundImage: payload.value, backgroundColor: undefined };
+                                    if (payload.type === 'clear') return { ...p, backgroundImage: undefined, backgroundColor: undefined };
+                                }
+                                return p;
+                            });
+                            updatePagesWithHistory(newPages);
+                        }
                     }}
                 />
             </div>
@@ -837,6 +864,65 @@ export default function BookEditor({ initialData }: EditorProps) {
                                             Styles ({selectedItem?.subField || 'Item'})
                                             <button onClick={() => updateItem('styles', undefined, false)} title="Reset styles" className="text-purple-400 hover:text-purple-600"><RefreshCcw size={12} /></button>
                                         </h3>
+
+                                        {/* TABLE TOOLS */}
+                                        {activeItem.type === 'table' && (
+                                            <div className="bg-white p-2 rounded border space-y-2">
+                                                <label className="text-[10px] font-bold text-gray-500 uppercase">Table Structure</label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <button onClick={() => {
+                                                        const data = activeItem.tableData || [['']];
+                                                        const cols = data[0].length;
+                                                        const newData = [...data, new Array(cols).fill('')];
+                                                        updateItem('tableData', newData);
+                                                    }} className="text-xs bg-gray-50 border p-1 rounded hover:bg-gray-100 flex gap-1 justify-center items-center"><Plus size={10} /> Row</button>
+
+                                                    <button onClick={() => {
+                                                        const data = activeItem.tableData || [['']];
+                                                        const newData = data.map(row => [...row, '']);
+                                                        updateItem('tableData', newData);
+                                                    }} className="text-xs bg-gray-50 border p-1 rounded hover:bg-gray-100 flex gap-1 justify-center items-center"><Plus size={10} /> Col</button>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <button onClick={() => {
+                                                        const data = activeItem.tableData || [];
+                                                        if (data.length <= 1) return;
+                                                        updateItem('tableData', data.slice(0, -1));
+                                                    }} className="text-xs border border-red-100 text-red-500 p-1 rounded hover:bg-red-50 flex gap-1 justify-center items-center"><Trash size={10} /> Row</button>
+                                                    <button onClick={() => {
+                                                        const data = activeItem.tableData || [];
+                                                        if (data[0].length <= 1) return;
+                                                        const newData = data.map(row => row.slice(0, -1));
+                                                        updateItem('tableData', newData);
+                                                    }} className="text-xs border border-red-100 text-red-500 p-1 rounded hover:bg-red-50 flex gap-1 justify-center items-center"><Trash size={10} /> Col</button>
+                                                </div>
+                                                <div className="flex gap-2 text-xs">
+                                                    <label className="flex items-center gap-1 cursor-pointer">
+                                                        <input type="checkbox" checked={!!activeItem.styles?.tableBorder} onChange={(e) => updateItem('tableBorder', e.target.checked, true)} /> Border
+                                                    </label>
+                                                    <label className="flex items-center gap-1 cursor-pointer">
+                                                        <input type="checkbox" checked={!!activeItem.styles?.tableStriped} onChange={(e) => updateItem('tableStriped', e.target.checked, true)} /> Striped
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* LIST TOOLS */}
+                                        {activeItem.type === 'list' && (
+                                            <div className="bg-white p-2 rounded border space-y-2">
+                                                <label className="text-[10px] font-bold text-gray-500 uppercase">List Items</label>
+                                                <textarea
+                                                    className="w-full text-xs border rounded p-1 h-24 font-mono"
+                                                    value={activeItem.listItems?.join('\n') || ''}
+                                                    onChange={(e) => updateItem('listItems', e.target.value.split('\n'))}
+                                                    placeholder="One item per line"
+                                                />
+                                                <div className="flex gap-2 justify-center bg-gray-50 p-1 rounded">
+                                                    <button onClick={() => updateItem('listType', 'bullet')} className={clsx("p-1 rounded", (activeItem.listType || 'bullet') === 'bullet' ? "bg-white shadow text-blue-600" : "text-gray-400")}><List size={14} /></button>
+                                                    <button onClick={() => updateItem('listType', 'number')} className={clsx("p-1 rounded", activeItem.listType === 'number' ? "bg-white shadow text-blue-600" : "text-gray-400")}><span className="text-xs font-serif font-bold">1.</span></button>
+                                                </div>
+                                            </div>
+                                        )}
 
 
                                         {selectedItem?.subField && (
@@ -1371,6 +1457,7 @@ export default function BookEditor({ initialData }: EditorProps) {
                                     setActiveTab('content'); // Auto switch to edit content
                                 }}
                                 onReorder={(items) => handleReorder(page.id, items)}
+                                onUpdateItem={(idx, field, val) => updateItem(field, val, false, page.id, idx)}
                             />
                         </div>
 

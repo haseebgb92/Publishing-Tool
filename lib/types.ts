@@ -93,6 +93,13 @@ export interface BookItem {
         headingLevel?: 1 | 2 | 3;
         tableBorder?: boolean;
         tableStriped?: boolean;
+
+        // Box Model (Text Box)
+        backgroundColor?: string;
+        borderColor?: string;
+        borderWidth?: number; // px
+        borderRadius?: number; // px
+        padding?: number; // px
     };
     [key: string]: any;
 }
@@ -104,6 +111,7 @@ export interface BookPage {
     items: BookItem[];
     // Page specific override?
     backgroundColor?: string;
+    backgroundImage?: string;
 }
 
 export interface BookSettings {

@@ -3,7 +3,7 @@ import {
     FileText, Save, Download, RotateCcw, Copy, Clipboard,
     Type, Image as ImageIcon, Table as TableIcon, List,
     Heading, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-    Settings, LayoutTemplate, PlusCircle, Grid
+    Settings, LayoutTemplate, PlusCircle, Grid, Box, ImagePlus, Eraser, Trash
 } from 'lucide-react';
 import clsx from 'clsx';
 import { BookSettings, BookItem } from '@/lib/types';
@@ -126,6 +126,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                         <ToolButton icon={List} label="List" onClick={() => onAction('add_item', 'list')} />
                         <div className="w-px h-10 bg-gray-200 mx-2" />
                         <ToolButton icon={LayoutTemplate} label="Section Title" onClick={() => onAction('add_item', 'section_title')} />
+                        <ToolButton icon={Box} label="Text Box" onClick={() => onAction('add_item', 'text_box')} />
                         <ToolButton icon={Settings} label="Quran/Dua" onClick={() => onAction('add_item', 'dua')} />
                     </>
                 )}
@@ -171,14 +172,34 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                         <div className="w-px h-10 bg-gray-200 mx-2" />
                         <div className="flex flex-col gap-1">
                             <label className="text-[10px] uppercase font-bold text-gray-500">Page Background</label>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="color"
-                                    value={activeItem?.styles?.backgroundColor || '#ffffff'} // This logic might need page context, simpler to rely on sidebar for per-page or update action
-                                    onChange={() => { }} // Placeholder, Layout usually affects global or active page
-                                    className="w-6 h-6 p-0 border rounded cursor-pointer"
-                                />
-                                <span className="text-[10px] text-gray-400">(Selected Page)</span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    className="p-1 hover:bg-gray-100 rounded text-gray-600"
+                                    title="Set Color"
+                                    onClick={() => {
+                                        const color = prompt("Enter background color (hex/name):", "#ffffff");
+                                        if (color) onAction('set_page_background', { type: 'color', value: color });
+                                    }}
+                                >
+                                    <div className="w-5 h-5 border rounded" style={{ background: 'linear-gradient(135deg, #fff 50%, #eee 50%)' }} />
+                                </button>
+                                <button
+                                    className="p-1 hover:bg-gray-100 rounded text-gray-600"
+                                    title="Set Image"
+                                    onClick={() => {
+                                        const url = prompt("Enter image URL:");
+                                        if (url) onAction('set_page_background', { type: 'image', value: url });
+                                    }}
+                                >
+                                    <ImagePlus size={20} />
+                                </button>
+                                <button
+                                    className="p-1 hover:bg-red-50 text-red-500 rounded"
+                                    title="Clear Background"
+                                    onClick={() => onAction('set_page_background', { type: 'clear' })}
+                                >
+                                    <Eraser size={20} />
+                                </button>
                             </div>
                         </div>
                     </>
@@ -223,6 +244,27 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                                     <option value={3}>H3 (Small)</option>
                                 </select>
                             </div>
+                        )}
+                        {/* Text Box / Box Model Styles */}
+                        {(activeItem.type === 'text' || activeItem.styles?.borderWidth) && (
+                            <>
+                                <div className="w-px h-10 bg-gray-200 mx-2" />
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-[10px] uppercase font-bold text-gray-500">Box Style</label>
+                                    <div className="flex gap-1">
+                                        <ColorPicker label="Fill" value={activeItem.styles?.backgroundColor} onChange={(v) => onUpdateItem('backgroundColor', v, true)} />
+                                        <ColorPicker label="Border" value={activeItem.styles?.borderColor} onChange={(v) => onUpdateItem('borderColor', v, true)} />
+                                        <div className="flex flex-col justify-center">
+                                            <label className="text-[9px] text-gray-400">Width</label>
+                                            <input type="number" className="w-10 text-xs border rounded" value={activeItem.styles?.borderWidth || 0} onChange={(e) => onUpdateItem('borderWidth', parseInt(e.target.value), true)} />
+                                        </div>
+                                        <div className="flex flex-col justify-center">
+                                            <label className="text-[9px] text-gray-400">Pad</label>
+                                            <input type="number" className="w-10 text-xs border rounded" value={activeItem.styles?.padding || 0} onChange={(e) => onUpdateItem('padding', parseInt(e.target.value), true)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </>
                 )}
