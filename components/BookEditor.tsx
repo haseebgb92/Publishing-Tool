@@ -651,7 +651,6 @@ export default function BookEditor({ initialData }: EditorProps) {
             newItem.image_src = '';
             // No default caption for type 'image'
         } else if (type === 'image_caption') {
-            newItem.type = 'image';
             newItem.image_src = '';
             newItem.image_caption_urdu = 'کیپشن';
             newItem.image_caption_english = 'Caption';
