@@ -112,6 +112,7 @@ export interface BookPage {
     // Page specific override?
     backgroundColor?: string;
     backgroundImage?: string;
+    showPageNumber?: boolean; // Control page number visibility per page
 }
 
 export interface BookSettings {

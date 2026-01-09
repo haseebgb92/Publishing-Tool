@@ -1274,6 +1274,27 @@ export default function BookEditor({ initialData }: EditorProps) {
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        const newPages = [...pages];
+                                        const pageIdx = newPages.findIndex(p => p.id === page.id);
+                                        if (pageIdx !== -1) {
+                                            newPages[pageIdx] = {
+                                                ...newPages[pageIdx],
+                                                showPageNumber: !newPages[pageIdx].showPageNumber
+                                            };
+                                            setPages(newPages);
+                                        }
+                                    }}
+                                    className={clsx(
+                                        "p-1.5 bg-white border border-gray-200 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-all text-xs",
+                                        page.showPageNumber !== false ? "text-blue-500 hover:bg-blue-50" : "text-gray-300 hover:bg-gray-50"
+                                    )}
+                                    title={page.showPageNumber !== false ? "Hide page number" : "Show page number"}
+                                >
+                                    #{page.showPageNumber !== false ? '✓' : '✗'}
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         setSelectedPageId(page.id);
                                         // Small delay to ensure state update if needed, but deletePage handles confirm
                                         setTimeout(deletePage, 10);

@@ -154,9 +154,11 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                 </div>
 
                 {/* Page Number */}
-                <div className="page-number-block">
-                    — {page.pageNumber} —
-                </div>
+                {(page.showPageNumber !== false) && (
+                    <div className="page-number-block">
+                        — {page.pageNumber} —
+                    </div>
+                )}
             </div>
         </div>
     );
