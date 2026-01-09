@@ -97,7 +97,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                                 )}
                             >
                                 {/* Drag Handle or whole item draggable? Whole item. */}
-                                {renderItem(item, settings, idx, selectedItemIdx === idx ? selectedSubField : null, onItemClick)}
+                                {renderItem(item, settings, idx, selectedItemIdx === idx, selectedItemIdx === idx ? selectedSubField : null, onItemClick)}
                             </div>
                         </SortableItemWrapper>
                     ))}
@@ -143,7 +143,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                                 selectedItemIdx === idx && "bg-blue-50/80 border-blue-200"
                             )}
                         >
-                            {renderItem(item, settings, idx, selectedItemIdx === idx ? selectedSubField : null, onItemClick)}
+                            {renderItem(item, settings, idx, selectedItemIdx === idx, selectedItemIdx === idx ? selectedSubField : null, onItemClick)}
                         </div>
                     ))}
                 </div>
@@ -157,7 +157,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
     );
 };
 
-function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, selectedSubField?: string | null, onItemClick?: (idx: number, sub?: string) => void) {
+function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | undefined, isSelected: boolean, selectedSubField: string | null | undefined, onItemClick?: (idx: number, sub?: string) => void) {
     const handleSubClick = (sub?: string) => {
         if (onItemClick && itemIdx !== undefined) {
             onItemClick(itemIdx, sub);
@@ -197,11 +197,16 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
     const headingLineHeight = getStyleVal('headingLineHeight', 1.4);
 
     const styles = {
-        arabic: { fontSize: arabicSize, textAlign: arabicAlign, fontFamily: arabicFont, direction: 'rtl' as 'rtl', lineHeight: arabicLineHeight },
-        urdu: { fontSize: urduSize, textAlign: urduAlign, fontFamily: urduFont, direction: 'rtl' as 'rtl', lineHeight: urduLineHeight },
-        english: { fontSize: englishSize, textAlign: englishAlign, fontFamily: englishFont, direction: 'ltr' as 'ltr', lineHeight: englishLineHeight },
-        heading: { fontSize: headingSize, textAlign: headingAlign, fontFamily: urduFont, direction: 'rtl' as 'rtl', lineHeight: headingLineHeight }
+        arabic: { fontSize: arabicSize, textAlign: arabicAlign, fontFamily: arabicFont, direction: 'rtl' as 'rtl', lineHeight: arabicLineHeight, color: item.styles?.arabicColor || 'black' },
+        urdu: { fontSize: urduSize, textAlign: urduAlign, fontFamily: urduFont, direction: 'rtl' as 'rtl', lineHeight: urduLineHeight, color: item.styles?.urduColor || 'black' },
+        english: { fontSize: englishSize, textAlign: englishAlign, fontFamily: englishFont, direction: 'ltr' as 'ltr', lineHeight: englishLineHeight, color: item.styles?.englishColor || 'black' },
+        heading: { fontSize: headingSize, textAlign: headingAlign, fontFamily: urduFont, direction: 'rtl' as 'rtl', lineHeight: headingLineHeight, color: item.styles?.headingColor || 'black' }
     };
+
+    if (item.styles?.headingLevel) {
+        if (item.styles.headingLevel === 2) styles.heading.fontSize = `calc(${headingSize} * 0.8)`;
+        if (item.styles.headingLevel === 3) styles.heading.fontSize = `calc(${headingSize} * 0.6)`;
+    }
 
     if (item.type === 'toc_entry') {
         return (
@@ -420,6 +425,51 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                         </div>
                     )}
                 </div>
+            </div>
+        );
+    }
+
+    if (item.type === 'table' && item.tableData) {
+        return (
+            <div
+                className={clsx("w-full overflow-x-auto mb-4", isSelected && "ring-2 ring-blue-300")}
+                onClick={(e) => { e.stopPropagation(); if (onItemClick && itemIdx !== undefined) onItemClick(itemIdx); }}
+            >
+                <table className={clsx("w-full border-collapse text-sm", item.styles?.tableBorder && "border", item.styles?.tableStriped && "table-auto")}>
+                    <tbody>
+                        {item.tableData.map((row, rIdx) => (
+                            <tr key={rIdx} className={clsx(item.styles?.tableStriped && rIdx % 2 === 1 && "bg-gray-50")}>
+                                {row.map((cell, cIdx) => (
+                                    <td
+                                        key={cIdx}
+                                        className={clsx("p-2", item.styles?.tableBorder && "border border-gray-300")}
+                                        onDoubleClick={(e) => { e.stopPropagation(); if (onItemClick && itemIdx !== undefined) onItemClick(itemIdx); }} // Future: Cell edit
+                                    >
+                                        {cell}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+    }
+
+    if (item.type === 'list' && item.listItems) {
+        const ListTag = item.listType === 'number' ? 'ol' : 'ul';
+        return (
+            <div
+                className="mb-4 px-4"
+                onClick={(e) => { e.stopPropagation(); if (onItemClick && itemIdx !== undefined) onItemClick(itemIdx); }}
+            >
+                <ListTag className={clsx("pl-5 space-y-1", item.listType === 'number' ? "list-decimal" : "list-disc")}>
+                    {item.listItems.map((li, liIdx) => (
+                        <li key={liIdx} className="text-gray-800" style={styles.english}>
+                            {li}
+                        </li>
+                    ))}
+                </ListTag>
             </div>
         );
     }

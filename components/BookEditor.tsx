@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BookPage, BookItem, BookSettings } from '@/lib/types';
 import { PageRenderer } from './PageRenderer';
+import { Toolbar } from './Toolbar';
 import { saveAs } from 'file-saver';
 import { useDropzone } from 'react-dropzone';
 import clsx from 'clsx';
@@ -631,6 +632,16 @@ export default function BookEditor({ initialData }: EditorProps) {
         } else if (type === 'image') {
             newItem.image_src = '';
             newItem.image_caption_urdu = 'تصویر کا عنوان';
+        } else if (type === 'table') {
+            newItem.tableData = [
+                ['Header 1', 'Header 2', 'Header 3'],
+                ['Cell 1.1', 'Cell 1.2', 'Cell 1.3'],
+                ['Cell 2.1', 'Cell 2.2', 'Cell 2.3']
+            ];
+            newItem.styles = { ...newItem.styles, tableBorder: true, tableStriped: true };
+        } else if (type === 'list') {
+            newItem.listItems = ['Item 1', 'Item 2', 'Item 3'];
+            newItem.listType = 'bullet';
         }
 
         const newPages = pages.map(p => {
@@ -746,20 +757,50 @@ export default function BookEditor({ initialData }: EditorProps) {
 
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden font-sans">
-            {/* --- Sidebar (Inspector) --- */}
-            <div className="w-80 bg-white border-r border-gray-200 flex flex-col no-print z-50 shadow-xl">
-                {/* Header */}
-                <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-                    <h2 className="font-bold text-gray-800 flex items-center gap-2"><LayoutTemplate size={18} /> Publisher</h2>
-                    <div className="flex gap-2">
-                        <button onClick={handleUndo} disabled={history.length === 0} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30" title="Undo (Ctrl+Z)">
-                            <RotateCcw size={14} />
-                        </button>
-                        <div {...getRootProps()} className="cursor-pointer text-xs bg-white border px-2 py-1 rounded hover:bg-gray-100 flex gap-1 items-center">
-                            <input {...getInputProps()} />
-                            <FileJson size={12} /> Open JSON
-                        </div>
-                    </div>
+            {/* --- Top Toolbar --- */}
+            <div className="absolute top-0 left-0 right-0 z-50">
+                <Toolbar
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    settings={settings}
+                    onUpdateSettings={setSettings}
+                    activeItem={activeItem || null}
+                    onUpdateItem={(field, val, isStyle) => updateItem(field, val, isStyle)}
+                    onAction={(action, payload) => {
+                        if (action === 'save') {
+                            const blob = new Blob([JSON.stringify({ pages, settings }, null, 2)], { type: 'application/json' });
+                            saveAs(blob, 'book_progress.json');
+                        }
+                        if (action === 'export') {
+                            setIsExporting(true);
+                            setTimeout(handleExportPDF, 100); // Async to allow UI to update
+                        }
+                        if (action === 'undo') handleUndo();
+                        if (action === 'open') {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'application/json';
+                            input.onchange = (e) => {
+                                const file = (e.target as HTMLInputElement).files?.[0];
+                                if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = (e) => loadBookData(JSON.parse(e.target?.result as string));
+                                    reader.readAsText(file);
+                                }
+                            };
+                            input.click();
+                        }
+                        if (action === 'add_page') addNewPage(pages.length);
+                        if (action === 'add_item') addItem(payload);
+                    }}
+                />
+            </div>
+
+            {/* --- Sidebar (Inspector / Properties) --- */}
+            <div className="w-80 bg-white border-r border-gray-200 flex flex-col no-print z-40 shadow-xl mt-[105px]">
+                {/* Header - Now simplified */}
+                <div className="p-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                    <h2 className="font-bold text-gray-800 flex items-center gap-2 text-xs uppercase"><Settings size={14} /> Properties & Outline</h2>
                 </div>
 
                 {/* Tabs */}

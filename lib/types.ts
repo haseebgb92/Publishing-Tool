@@ -12,7 +12,10 @@ export type ItemType =
     | 'question_answer'
     | 'q_a'
     | 'table_of_contents'
-    | 'image';
+    | 'image'
+    | 'table'
+    | 'list'
+    | 'divider';
 
 export interface BookItem {
     type: ItemType | string;
@@ -46,6 +49,11 @@ export interface BookItem {
     image_src?: string;
     image_caption_urdu?: string;
     image_caption_english?: string;
+    // Tables
+    tableData?: string[][]; // Grid of strings
+    // Lists
+    listItems?: string[];
+    listType?: 'bullet' | 'number';
     // Editor - Unique ID for stable keys
     id?: string;
     // Individual Style Overrides (Delta from global)
@@ -74,6 +82,17 @@ export interface BookItem {
         englishLineHeight?: number;
         headingLineHeight?: number;
         imageWidth?: number; // percentage (0-100)
+
+        // Colors
+        arabicColor?: string;
+        urduColor?: string;
+        englishColor?: string;
+        headingColor?: string;
+
+        // Composing Options
+        headingLevel?: 1 | 2 | 3;
+        tableBorder?: boolean;
+        tableStriped?: boolean;
     };
     [key: string]: any;
 }
