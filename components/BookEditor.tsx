@@ -649,7 +649,7 @@ export default function BookEditor({ initialData }: EditorProps) {
             newItem.content_urdu = 'ہدایت';
         } else if (type === 'image') {
             newItem.image_src = '';
-            newItem.image_caption_urdu = 'تصویر کا عنوان';
+            // No default caption for type 'image'
         } else if (type === 'image_caption') {
             newItem.type = 'image';
             newItem.image_src = '';
@@ -994,6 +994,13 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                         }
                                                     }} />
                                                 </label>
+                                                <div className="pt-2 border-t border-gray-100">
+                                                    <StyleSlider
+                                                        label="Image Scale (%)" min={10} max={100} unit="%"
+                                                        value={activeItem.styles?.imageWidth || 100}
+                                                        onChange={(v) => updateItem('imageWidth', v, true)}
+                                                    />
+                                                </div>
                                             </div>
                                         )}
                                     </>

@@ -539,28 +539,31 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx: number | un
                         <span className="text-xs italic">No image uploaded</span>
                     </div>
                 )}
-                <div className="w-full space-y-1">
-                    <EditableField
-                        value={item.image_caption_urdu}
-                        onChange={(v: string) => onUpdateItem?.(itemIdx!, 'image_caption_urdu', v)}
-                        style={styles.urdu}
-                        className={clsx("text-center font-bold text-gray-700 transition-colors rounded px-1", getFieldClass('image_caption_urdu'))}
-                        dir="rtl"
-                        isEditing={isSelected && selectedSubField === 'image_caption_urdu'}
-                        onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('image_caption_urdu'); }}
-                        placeholder="Urdu Caption"
-                    />
+                {/* Caption Container - Only render if has content or is 'image_caption' type */}
+                {(item.image_caption_urdu || item.image_caption_english || item.type === 'image_caption') && (
+                    <div className="w-full space-y-1 mt-2">
+                        <EditableField
+                            value={item.image_caption_urdu}
+                            onChange={(v: string) => onUpdateItem?.(itemIdx!, 'image_caption_urdu', v)}
+                            style={styles.urdu}
+                            className={clsx("text-center font-bold text-gray-700 transition-colors rounded px-1", getFieldClass('image_caption_urdu'))}
+                            dir="rtl"
+                            isEditing={isSelected && selectedSubField === 'image_caption_urdu'}
+                            onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('image_caption_urdu'); }}
+                            placeholder={item.type === 'image_caption' ? "Urdu Caption" : ""}
+                        />
 
-                    <EditableField
-                        value={item.image_caption_english}
-                        onChange={(v: string) => onUpdateItem?.(itemIdx!, 'image_caption_english', v)}
-                        style={styles.english}
-                        className={clsx("text-center text-xs opacity-60 transition-colors rounded px-1", getFieldClass('image_caption_english'))}
-                        isEditing={isSelected && selectedSubField === 'image_caption_english'}
-                        onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('image_caption_english'); }}
-                        placeholder="English Caption"
-                    />
-                </div>
+                        <EditableField
+                            value={item.image_caption_english}
+                            onChange={(v: string) => onUpdateItem?.(itemIdx!, 'image_caption_english', v)}
+                            style={styles.english}
+                            className={clsx("text-center text-xs opacity-60 transition-colors rounded px-1", getFieldClass('image_caption_english'))}
+                            isEditing={isSelected && selectedSubField === 'image_caption_english'}
+                            onDoubleClick={(e: any) => { e.stopPropagation(); handleSubClick('image_caption_english'); }}
+                            placeholder={item.type === 'image_caption' ? "English Caption" : ""}
+                        />
+                    </div>
+                )}
             </div>
         );
     }
