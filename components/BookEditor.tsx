@@ -797,16 +797,6 @@ export default function BookEditor({ initialData }: EditorProps) {
                                             <button onClick={() => updateItem('styles', undefined, false)} title="Reset styles" className="text-purple-400 hover:text-purple-600"><RefreshCcw size={12} /></button>
                                         </h3>
 
-                                        {activeItem.type === 'image' && (
-                                            <div className="mb-4 pb-4 border-b border-purple-200">
-                                                <StyleSlider
-                                                    label="Image Scale (%)"
-                                                    min={10} max={100} unit="%"
-                                                    value={activeItem.styles?.imageWidth || 100}
-                                                    onChange={(v) => updateItem('imageWidth', v, true)}
-                                                />
-                                            </div>
-                                        )}
 
                                         {selectedItem?.subField && (
                                             <div className="space-y-4">
@@ -897,6 +887,16 @@ export default function BookEditor({ initialData }: EditorProps) {
 
                                         {activeItem.type === 'image' && (
                                             <div className="pt-3 border-t">
+                                                <div className="bg-pink-50 p-3 rounded-lg border border-pink-100 mb-3">
+                                                    <label className="block text-[10px] font-bold text-pink-600 uppercase mb-2">Image Scaling</label>
+                                                    <StyleSlider
+                                                        label="Current Scale"
+                                                        min={10} max={100} unit="%"
+                                                        value={activeItem.styles?.imageWidth || 100}
+                                                        onChange={(v) => updateItem('imageWidth', v, true)}
+                                                    />
+                                                </div>
+
                                                 <label className="block text-[10px] font-bold text-pink-400 uppercase mb-2">Image File</label>
                                                 <div className="flex flex-col gap-2">
                                                     {activeItem.image_src && (
