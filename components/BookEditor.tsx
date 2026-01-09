@@ -26,6 +26,7 @@ export default function BookEditor({ initialData }: EditorProps) {
     const [selectedItem, setSelectedItem] = useState<{ pageId: string, itemIdx: number, subField?: string } | null>(null);
     const [activeTab, setActiveTab] = useState<'layout' | 'typography' | 'content' | 'assets'>('content');
     const [isExporting, setIsExporting] = useState(false);
+    const [bulkTOCText, setBulkTOCText] = useState('');
 
     const [settings, setSettings] = useState<BookSettings>({
         pageSize: { width: 210, height: 297, name: 'A4' },
@@ -627,6 +628,9 @@ export default function BookEditor({ initialData }: EditorProps) {
             newItem.content_english = 'English Text';
         } else if (type === 'instruction') {
             newItem.content_urdu = 'ہدایت';
+        } else if (type === 'image') {
+            newItem.image_src = '';
+            newItem.image_caption_urdu = 'تصویر کا عنوان';
         }
 
         const newPages = pages.map(p => {
@@ -638,6 +642,49 @@ export default function BookEditor({ initialData }: EditorProps) {
 
         updatePagesWithHistory(newPages);
         setSelectedItem({ pageId: selectedPageId, itemIdx: newPages.find(p => p.id === selectedPageId)!.items.length - 1 });
+    };
+
+    const handleBulkTOCCopyPaste = (text: string) => {
+        if (!selectedPageId) {
+            alert("Please select a page first.");
+            return;
+        }
+
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        const newItems: BookItem[] = lines.map((line, i) => {
+            // Try to split by tab or multiple spaces
+            let parts = line.split(/\t/);
+            if (parts.length < 2) {
+                // Try splitting by last space followed by digits
+                const lastSpaceIdx = line.lastIndexOf(' ');
+                if (lastSpaceIdx !== -1) {
+                    const possiblePage = line.substring(lastSpaceIdx + 1).trim();
+                    if (/^\d+$/.test(possiblePage)) {
+                        parts = [line.substring(0, lastSpaceIdx).trim(), possiblePage];
+                    }
+                }
+            }
+
+            const topic = parts[0]?.trim() || 'Topic';
+            const pageNum = parts[1]?.trim() || '';
+
+            return {
+                id: `toc-${Date.now()}-${i}`,
+                type: 'toc_entry',
+                urdu: topic,
+                toc_page: pageNum
+            };
+        });
+
+        const newPages = pages.map(p => {
+            if (p.id === selectedPageId) {
+                return { ...p, items: [...p.items, ...newItems] };
+            }
+            return p;
+        });
+
+        updatePagesWithHistory(newPages);
+        alert(`Added ${newItems.length} TOC entries.`);
     };
 
     // --- Keyboard Shortcuts ---
@@ -808,7 +855,7 @@ export default function BookEditor({ initialData }: EditorProps) {
 
                                     <div className="space-y-3">
                                         <div className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b pb-1">Edit Text</div>
-                                        {['arabic', 'roman', 'urdu', 'english', 'fazilat', 'fazilat_english', 'heading_urdu', 'heading_english', 'content_urdu', 'content_english'].map(field => (
+                                        {['arabic', 'roman', 'urdu', 'english', 'fazilat', 'fazilat_english', 'heading_urdu', 'heading_english', 'content_urdu', 'content_english', 'image_caption_urdu', 'image_caption_english'].map(field => (
                                             (activeItem[field] !== undefined || (field.includes('heading') && activeItem.type === 'heading')) && (
                                                 <div key={field}>
                                                     <label className="block text-[10px] font-medium text-gray-500 mb-1 capitalize">{field.replace('_', ' ')}</label>
@@ -816,6 +863,35 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                 </div>
                                             )
                                         ))}
+
+                                        {activeItem.type === 'image' && (
+                                            <div className="pt-3 border-t">
+                                                <label className="block text-[10px] font-bold text-pink-400 uppercase mb-2">Image File</label>
+                                                <div className="flex flex-col gap-2">
+                                                    {activeItem.image_src && (
+                                                        <img src={activeItem.image_src} alt="Preview" className="w-full h-32 object-contain border rounded bg-white shadow-inner" />
+                                                    )}
+                                                    <label className="flex items-center justify-center w-full py-2 border-2 border-dashed rounded-lg cursor-pointer hover:bg-pink-50 transition-colors border-pink-200">
+                                                        <div className="text-center flex items-center gap-2">
+                                                            <Upload size={14} className="text-pink-400" />
+                                                            <span className="text-[10px] text-pink-600 font-bold uppercase">{activeItem.image_src ? 'Replace Image' : 'Upload Image'}</span>
+                                                        </div>
+                                                        <input
+                                                            type="file"
+                                                            className="hidden"
+                                                            accept="image/*"
+                                                            onChange={(e) => {
+                                                                if (e.target.files?.[0]) {
+                                                                    const reader = new FileReader();
+                                                                    reader.onload = () => updateItem('image_src', reader.result);
+                                                                    reader.readAsDataURL(e.target.files[0]);
+                                                                }
+                                                            }}
+                                                        />
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="pt-4 border-t border-gray-100">
@@ -837,6 +913,7 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                 <button onClick={() => addItem('dua')} className="py-2 px-1 bg-green-50 border border-green-100 hover:bg-green-100 text-[10px] rounded flex items-center justify-center gap-1 text-green-700 font-bold"><PlusCircle size={14} /> Dua/Quran</button>
                                                 <button onClick={() => addItem('text')} className="py-2 px-1 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700"><PlusCircle size={14} /> Text</button>
                                                 <button onClick={() => addItem('instruction')} className="py-2 px-1 bg-orange-50 border border-orange-100 hover:bg-orange-100 text-[10px] rounded flex items-center justify-center gap-1 text-orange-700"><PlusCircle size={14} /> Instr.</button>
+                                                <button onClick={() => addItem('image')} className="py-2 px-1 bg-pink-50 border border-pink-100 hover:bg-pink-100 text-[10px] rounded flex items-center justify-center gap-1 text-pink-700 font-bold col-span-2"><ImageIcon size={14} /> Add Image</button>
                                             </div>
                                         </div>
                                     </div>
@@ -871,6 +948,35 @@ export default function BookEditor({ initialData }: EditorProps) {
                                                     <div className="p-2 bg-orange-500 text-white rounded-lg"><PlusCircle size={16} /></div>
                                                     <div className="flex flex-col items-start leading-tight"><span>Add Instruction</span><span className="text-[10px] font-normal opacity-60">How to perform</span></div>
                                                 </button>
+                                                <button onClick={() => addItem('image')} className="py-3 px-4 bg-pink-50 border border-pink-200 hover:bg-pink-100 text-xs rounded-lg flex items-center gap-3 text-pink-700 font-bold transition-all transform hover:scale-[1.02]">
+                                                    <div className="p-2 bg-pink-500 text-white rounded-lg"><ImageIcon size={16} /></div>
+                                                    <div className="flex flex-col items-start leading-tight"><span>Add Image</span><span className="text-[10px] font-normal opacity-60">Photo or Illustration</span></div>
+                                                </button>
+                                            </div>
+
+                                            <div className="pt-6 mt-6 border-t">
+                                                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Bulk Tools</h4>
+                                                <div className="bg-gray-50 p-3 rounded-lg border">
+                                                    <label className="block text-[10px] font-bold text-gray-500 mb-2 uppercase">Bulk Add TOC Entries</label>
+                                                    <p className="text-[9px] text-gray-400 mb-2 italic leading-tight">Paste lines in "Topic [TAB] Page" format from Excel/Word.</p>
+                                                    <textarea
+                                                        className="w-full text-[10px] p-2 border rounded font-mono mb-2"
+                                                        rows={4}
+                                                        placeholder={"Morning Duas\t12\nEvening Prayers\t24"}
+                                                        value={bulkTOCText}
+                                                        onChange={(e) => setBulkTOCText(e.target.value)}
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            handleBulkTOCCopyPaste(bulkTOCText);
+                                                            setBulkTOCText('');
+                                                        }}
+                                                        disabled={!bulkTOCText.trim()}
+                                                        className="w-full py-2 bg-indigo-50 border border-indigo-200 text-indigo-600 rounded text-[10px] font-bold hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        Parse & Add Entries
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     )}

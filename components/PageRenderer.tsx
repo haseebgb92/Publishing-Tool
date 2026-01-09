@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Image as ImageIcon } from 'lucide-react';
 
 interface PageRendererProps {
     page: BookPage;
@@ -348,6 +349,53 @@ function renderItem(item: BookItem, settings: BookSettings, itemIdx?: number, se
                         </div>
                     );
                 })}
+            </div>
+        );
+    }
+
+    if (item.type === 'image') {
+        return (
+            <div
+                className="image-item mb-6 flex flex-col items-center gap-2"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (itemIdx !== undefined && onItemClick) onItemClick(itemIdx);
+                }}
+            >
+                {item.image_src ? (
+                    <img
+                        src={item.image_src}
+                        alt="Book Content"
+                        className="max-w-full h-auto rounded border shadow-sm transition-transform hover:scale-[1.01]"
+                        style={{ maxHeight: '600px' }}
+                    />
+                ) : (
+                    <div className="w-full h-40 bg-gray-50 border-2 border-dashed border-gray-200 rounded flex flex-col items-center justify-center text-gray-400">
+                        <ImageIcon size={32} className="mb-2 opacity-20" />
+                        <span className="text-xs italic">No image uploaded</span>
+                    </div>
+                )}
+                <div className="w-full space-y-1">
+                    {item.image_caption_urdu && (
+                        <div
+                            className={clsx("text-center font-bold text-gray-700 transition-colors rounded px-1", selectedSubField === 'image_caption_urdu' && "bg-yellow-100 ring-2 ring-yellow-400")}
+                            style={styles.urdu}
+                            onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('image_caption_urdu'); }}
+                            dir="rtl"
+                        >
+                            {item.image_caption_urdu}
+                        </div>
+                    )}
+                    {item.image_caption_english && (
+                        <div
+                            className={clsx("text-center text-xs opacity-60 transition-colors rounded px-1", selectedSubField === 'image_caption_english' && "bg-yellow-100 ring-2 ring-yellow-400")}
+                            style={styles.english}
+                            onDoubleClick={(e) => { e.stopPropagation(); handleSubClick('image_caption_english'); }}
+                        >
+                            {item.image_caption_english}
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }

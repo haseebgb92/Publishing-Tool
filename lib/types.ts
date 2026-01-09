@@ -11,7 +11,8 @@ export type ItemType =
     | 'names_of_allah'
     | 'question_answer'
     | 'q_a'
-    | 'table_of_contents';
+    | 'table_of_contents'
+    | 'image';
 
 export interface BookItem {
     type: ItemType | string;
@@ -40,7 +41,11 @@ export interface BookItem {
     names?: { arabic: string; roman: string; english: string; urdu: string }[];
 
     // TOC
-    toc_page?: number;
+    toc_page?: string | number;
+    // Images
+    image_src?: string;
+    image_caption_urdu?: string;
+    image_caption_english?: string;
     // Editor - Unique ID for stable keys
     id?: string;
     // Individual Style Overrides (Delta from global)
