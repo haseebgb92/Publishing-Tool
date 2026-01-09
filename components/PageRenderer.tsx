@@ -154,11 +154,67 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                 </div>
 
                 {/* Page Number */}
-                {(page.showPageNumber !== false) && (
-                    <div className="page-number-block">
-                        — {page.pageNumber} —
-                    </div>
-                )}
+                {(() => {
+                    // Determine if we should show page number for this specific page
+                    const shouldShowPageNumber =
+                        settings.showPageNumbers &&
+                        settings.pageNumberPosition !== 'hidden' &&
+                        page.pageNumber >= settings.pageNumberStartFrom &&
+                        page.showPageNumber !== false;
+
+                    if (!shouldShowPageNumber) return null;
+
+                    // Convert page number to appropriate format
+                    const convertNumber = (num: number): string => {
+                        const adjustedNum = num - settings.pageNumberStartFrom + 1;
+                        switch (settings.pageNumberStyle) {
+                            case 'urdu':
+                                // Convert to Urdu numerals
+                                const urduDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+                                return adjustedNum.toString().split('').map(d => urduDigits[parseInt(d)]).join('');
+                            case 'arabic':
+                                // Convert to Arabic numerals
+                                const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+                                return adjustedNum.toString().split('').map(d => arabicDigits[parseInt(d)]).join('');
+                            case 'roman':
+                                // Convert to Roman numerals (lowercase)
+                                const romanize = (num: number): string => {
+                                    const lookup: { [key: string]: number } = { m: 1000, cm: 900, d: 500, cd: 400, c: 100, xc: 90, l: 50, xl: 40, x: 10, ix: 9, v: 5, iv: 4, i: 1 };
+                                    let roman = '';
+                                    for (let i in lookup) {
+                                        while (num >= lookup[i]) {
+                                            roman += i;
+                                            num -= lookup[i];
+                                        }
+                                    }
+                                    return roman;
+                                };
+                                return romanize(adjustedNum);
+                            case 'number':
+                            default:
+                                return adjustedNum.toString();
+                        }
+                    };
+
+                    const formattedNumber = convertNumber(page.pageNumber);
+                    const fullPageNumber = `${settings.pageNumberPrefix || ''}${formattedNumber}${settings.pageNumberSuffix || ''}`;
+
+                    return (
+                        <div
+                            className="page-number-block"
+                            style={{
+                                textAlign: settings.pageNumberAlignment || 'center',
+                                position: settings.pageNumberPosition === 'top' ? 'absolute' : 'relative',
+                                top: settings.pageNumberPosition === 'top' ? '10px' : 'auto',
+                                left: 0,
+                                right: 0,
+                                width: '100%'
+                            }}
+                        >
+                            {fullPageNumber}
+                        </div>
+                    );
+                })()}
             </div>
         </div>
     );

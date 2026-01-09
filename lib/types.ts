@@ -156,5 +156,12 @@ export interface BookSettings {
     pageBackgroundImage?: string; // Data URL or Path
     headingBackgroundImage?: string;
     showOutlines: boolean;
-    pageNumberStyle: 'number' | 'urdu' | 'roman';
+    pageNumberStyle: 'number' | 'urdu' | 'arabic' | 'roman';
+    // Page numbering controls
+    showPageNumbers: boolean; // Global toggle for page numbers
+    pageNumberStartFrom: number; // Which page to start numbering from (1-indexed)
+    pageNumberPosition: 'top' | 'bottom' | 'hidden';
+    pageNumberAlignment: 'left' | 'center' | 'right';
+    pageNumberPrefix?: string; // e.g., "Page "
+    pageNumberSuffix?: string; // e.g., " —"
 }

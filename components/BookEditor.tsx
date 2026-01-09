@@ -56,7 +56,13 @@ export default function BookEditor({ initialData }: EditorProps) {
         sectionTitleOffset: 0,
         headingBackgroundImage: '',
         showOutlines: true,
-        pageNumberStyle: 'number'
+        pageNumberStyle: 'number',
+        showPageNumbers: true,
+        pageNumberStartFrom: 1,
+        pageNumberPosition: 'bottom',
+        pageNumberAlignment: 'center',
+        pageNumberPrefix: '— ',
+        pageNumberSuffix: ' —'
     });
 
     // --- Initialization ---
@@ -1210,18 +1216,107 @@ export default function BookEditor({ initialData }: EditorProps) {
                                     ))}
                                 </div>
 
-                                {/* Page Number Style */}
-                                <div>
-                                    <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Page Number Style</label>
-                                    <select
-                                        className="w-full text-xs p-1 border rounded bg-white"
-                                        value={settings.pageNumberStyle || 'urdu'}
-                                        onChange={(e) => setSettings({ ...settings, pageNumberStyle: e.target.value as any })}
-                                    >
-                                        <option value="urdu">Urdu (۱, ۲, ۳)</option>
-                                        <option value="arabic">Arabic (1, 2, 3)</option>
-                                        <option value="roman">Roman (i, ii, iii)</option>
-                                    </select>
+                                {/* Page Number Controls */}
+                                <div className="bg-white p-3 rounded border space-y-3">
+                                    <div className="text-[10px] font-bold text-green-600 uppercase mb-2">Page Number Settings</div>
+
+                                    {/* Show/Hide Page Numbers */}
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] uppercase font-bold text-gray-500">Show Page Numbers</label>
+                                        <input
+                                            type="checkbox"
+                                            className="w-4 h-4 accent-green-500 cursor-pointer"
+                                            checked={settings.showPageNumbers}
+                                            onChange={(e) => setSettings({ ...settings, showPageNumbers: e.target.checked })}
+                                        />
+                                    </div>
+
+                                    {/* Start Numbering From */}
+                                    <div>
+                                        <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Start Numbering From Page</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max={pages.length}
+                                            className="w-full text-xs p-1.5 border rounded bg-white"
+                                            value={settings.pageNumberStartFrom}
+                                            onChange={(e) => setSettings({ ...settings, pageNumberStartFrom: parseInt(e.target.value) || 1 })}
+                                        />
+                                    </div>
+
+                                    {/* Page Number Style */}
+                                    <div>
+                                        <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Number Style</label>
+                                        <select
+                                            className="w-full text-xs p-1.5 border rounded bg-white"
+                                            value={settings.pageNumberStyle || 'number'}
+                                            onChange={(e) => setSettings({ ...settings, pageNumberStyle: e.target.value as any })}
+                                        >
+                                            <option value="number">Numbers (1, 2, 3)</option>
+                                            <option value="urdu">Urdu (۱, ۲, ۳)</option>
+                                            <option value="arabic">Arabic (١, ٢, ٣)</option>
+                                            <option value="roman">Roman (i, ii, iii)</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Position */}
+                                    <div>
+                                        <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Position</label>
+                                        <select
+                                            className="w-full text-xs p-1.5 border rounded bg-white"
+                                            value={settings.pageNumberPosition || 'bottom'}
+                                            onChange={(e) => setSettings({ ...settings, pageNumberPosition: e.target.value as any })}
+                                        >
+                                            <option value="top">Top</option>
+                                            <option value="bottom">Bottom</option>
+                                            <option value="hidden">Hidden</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Alignment */}
+                                    <div>
+                                        <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Alignment</label>
+                                        <div className="flex gap-1 bg-gray-50 p-1 rounded">
+                                            {['left', 'center', 'right'].map((align) => (
+                                                <button
+                                                    key={align}
+                                                    onClick={() => setSettings({ ...settings, pageNumberAlignment: align as any })}
+                                                    className={clsx(
+                                                        "flex-1 p-1.5 rounded text-xs capitalize transition-colors",
+                                                        settings.pageNumberAlignment === align
+                                                            ? "bg-green-500 text-white"
+                                                            : "bg-white text-gray-600 hover:bg-gray-100"
+                                                    )}
+                                                >
+                                                    {align}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Prefix */}
+                                    <div>
+                                        <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Prefix (before number)</label>
+                                        <input
+                                            type="text"
+                                            className="w-full text-xs p-1.5 border rounded bg-white"
+                                            value={settings.pageNumberPrefix || ''}
+                                            onChange={(e) => setSettings({ ...settings, pageNumberPrefix: e.target.value })}
+                                            placeholder="e.g., Page "
+                                        />
+                                    </div>
+
+                                    {/* Suffix */}
+                                    <div>
+                                        <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Suffix (after number)</label>
+                                        <input
+                                            type="text"
+                                            className="w-full text-xs p-1.5 border rounded bg-white"
+                                            value={settings.pageNumberSuffix || ''}
+                                            onChange={(e) => setSettings({ ...settings, pageNumberSuffix: e.target.value })}
+                                            placeholder="e.g.,  —"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         )}
