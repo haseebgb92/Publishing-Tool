@@ -155,4 +155,5 @@ export interface BookSettings {
     pageBackgroundImage?: string; // Data URL or Path
     headingBackgroundImage?: string;
     showOutlines: boolean;
+    pageNumberStyle: 'number' | 'urdu' | 'roman';
 }

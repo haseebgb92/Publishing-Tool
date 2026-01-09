@@ -17,6 +17,8 @@ interface ToolbarProps {
     onAction: (action: string, payload?: any) => void;
     activeItem: BookItem | null;
     onUpdateItem: (field: string, value: any, isStyle?: boolean) => void;
+    zoomLevel?: number;
+    setZoomLevel?: (zoom: number) => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({

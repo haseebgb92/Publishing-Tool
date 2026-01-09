@@ -13,7 +13,7 @@ import {
     RefreshCcw, ArrowDown, ArrowUp, Trash, RotateCcw, RotateCw,
     AlignLeft, AlignCenter, AlignRight, AlignJustify,
     PlusCircle, Plus, Crown, ArrowUpDown, List,
-    ChevronRight
+    ChevronRight, Box
 } from 'lucide-react';
 
 interface EditorProps {
@@ -24,6 +24,7 @@ export default function BookEditor({ initialData }: EditorProps) {
     // --- State ---
     const [pages, setPages] = useState<BookPage[]>([]);
     const [history, setHistory] = useState<BookPage[][]>([]);
+    const [historyFuture, setHistoryFuture] = useState<BookPage[][]>([]);
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<{ pageId: string, itemIdx: number, subField?: string } | null>(null);
     const [activeTab, setActiveTab] = useState<'layout' | 'typography' | 'content' | 'assets'>('content');
@@ -53,9 +54,9 @@ export default function BookEditor({ initialData }: EditorProps) {
             headingLineHeight: 1.4
         },
         sectionTitleOffset: 0,
-        pageBackgroundImage: '',
         headingBackgroundImage: '',
-        showOutlines: true
+        showOutlines: true,
+        pageNumberStyle: 'number'
     });
 
     // --- Initialization ---
@@ -266,15 +267,25 @@ export default function BookEditor({ initialData }: EditorProps) {
     // --- History Helper ---
     const updatePagesWithHistory = (newPages: BookPage[]) => {
         setHistory(prev => [...prev.slice(-20), pages]); // Keep last 20 states
+        setHistoryFuture([]); // Clear redo history
         setPages(newPages);
     };
 
-    const handleUndo = () => {
+    const handleUndo = useCallback(() => {
         if (history.length === 0) return;
         const previous = history[history.length - 1];
+        setHistoryFuture(prev => [pages, ...prev]);
         setHistory(prev => prev.slice(0, -1));
         setPages(previous);
-    };
+    }, [history, pages]);
+
+    const handleRedo = useCallback(() => {
+        if (historyFuture.length === 0) return;
+        const next = historyFuture[0];
+        setHistory(prev => [...prev, pages]);
+        setHistoryFuture(prev => prev.slice(1));
+        setPages(next);
+    }, [historyFuture, pages]);
 
     // --- Actions ---
     /* New Cross-Page Move Logic with Granular Splitting */
@@ -877,562 +888,338 @@ export default function BookEditor({ initialData }: EditorProps) {
             {/* --- Sidebar (Inspector / Properties) --- */}
             <div className="w-80 bg-white border-r border-gray-200 flex flex-col no-print z-40 shadow-xl mt-[105px]">
                 {/* Header - Now simplified */}
-                <div className="p-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-                    <h2 className="font-bold text-gray-800 flex items-center gap-2 text-xs uppercase"><Settings size={14} /> Properties & Outline</h2>
-                </div>
-
-                {/* Tabs */}
-                <div className="flex border-b border-gray-200">
-                    <button
-                        onClick={() => setActiveTab('content')}
-                        className={clsx("flex-1 py-3 text-xs font-semibold uppercase border-b-2 transition-colors flex justify-center gap-1", activeTab === 'content' ? "border-blue-500 text-blue-600 bg-blue-50" : "border-transparent text-gray-500 hover:bg-gray-50")}
-                    >
-                        <Type size={14} /> Content
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('typography')}
-                        className={clsx("flex-1 py-3 text-xs font-semibold uppercase border-b-2 transition-colors flex justify-center gap-1", activeTab === 'typography' ? "border-blue-500 text-blue-600 bg-blue-50" : "border-transparent text-gray-500 hover:bg-gray-50")}
-                    >
-                        <Settings size={14} /> Styles
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('layout')}
-                        className={clsx("flex-1 py-3 text-xs font-semibold uppercase border-b-2 transition-colors flex justify-center gap-1", activeTab === 'layout' ? "border-blue-500 text-blue-600 bg-blue-50" : "border-transparent text-gray-500 hover:bg-gray-50")}
-                    >
-                        <ImageIcon size={14} /> Assets
-                    </button>
+                {/* 1. Sticky Actions Header */}
+                <div className="p-2 border-b border-gray-200 bg-gray-50 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+                    <div className="flex gap-1">
+                        <button onClick={handleUndo} className="p-1.5 text-gray-600 hover:bg-gray-200 rounded transition-colors" title="Undo (Ctrl+Z)"><RotateCcw size={14} /></button>
+                        <button onClick={handleRedo} className="p-1.5 text-gray-600 hover:bg-gray-200 rounded transition-colors" title="Redo (Ctrl+Y)"><RotateCw size={14} /></button>
+                    </div>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Properties</div>
+                    {activeItem && (
+                        <div className="flex gap-1 bg-white border rounded p-0.5 shadow-sm">
+                            <button onClick={() => moveActiveItemToPage(-1)} className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Move to Prev Page"><ArrowUp size={14} /></button>
+                            <button onClick={() => moveActiveItemToPage(1)} className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Move to Next Page"><ArrowDown size={14} /></button>
+                            <div className="w-px bg-gray-200 mx-0.5" />
+                            <button onClick={deleteItem} className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete Item"><Trash size={14} /></button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-5 space-y-6">
 
                     {/* --- TAB: CONTENT --- */}
-                    {activeTab === 'content' && (
-                        <>
-                            {activeItem ? (
-                                <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
-                                    <div className="bg-purple-50 border border-purple-100 p-3 rounded-lg mb-4">
-                                        <h3 className="text-xs font-bold text-purple-700 uppercase mb-3 flex justify-between">
-                                            Styles ({selectedItem?.subField || 'Item'})
-                                            <button onClick={() => updateItem('styles', undefined, false)} title="Reset styles" className="text-purple-400 hover:text-purple-600"><RefreshCcw size={12} /></button>
-                                        </h3>
+                    {/* SECTION: CONTENT */}
+                    <div className="border-b border-gray-100">
+                        <button
+                            onClick={() => setExpandedSections(prev => prev.includes('content') ? prev.filter(p => p !== 'content') : [...prev, 'content'])}
+                            className="w-full p-3 flex justify-between items-center bg-white hover:bg-gray-50 transition-colors"
+                        >
+                            <span className="flex items-center gap-2 text-xs font-bold uppercase text-gray-700"><Type size={14} className="text-blue-500" /> Content</span>
+                            <ChevronRight size={14} className={clsx("transition-transform text-gray-400", expandedSections.includes('content') ? "rotate-90" : "")} />
+                        </button>
+
+                        {expandedSections.includes('content') && (
+                            <div className="p-4 bg-gray-50/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                                {!activeItem ? (
+                                    <div className="text-center text-gray-400 py-6 border-2 border-dashed rounded-lg">
+                                        <p className="text-xs italic">Select an item to edit content.</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* TEXT FIELDS */}
+                                        <div className="space-y-3">
+                                            {['arabic', 'urdu', 'english', 'heading_urdu', 'heading_english', 'content_urdu', 'content_english', 'toc_page'].map(field => (
+                                                (activeItem[field] !== undefined || (field.includes('heading') && activeItem.type === 'heading')) && (
+                                                    <div key={field}>
+                                                        <label className="block text-[10px] font-bold text-gray-500 mb-1 capitalize">{field.replace('_', ' ')}</label>
+                                                        <textarea
+                                                            className="w-full text-sm p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-shadow bg-white"
+                                                            rows={field === 'arabic' ? 3 : 2}
+                                                            dir={field.includes('english') || field === 'roman' ? 'ltr' : 'rtl'}
+                                                            value={activeItem[field] || ''}
+                                                            onChange={(e) => updateItem(field, e.target.value)}
+                                                        />
+                                                    </div>
+                                                )
+                                            ))}
+                                        </div>
 
                                         {/* TABLE TOOLS */}
                                         {activeItem.type === 'table' && (
-                                            <div className="bg-white p-2 rounded border space-y-2">
-                                                <label className="text-[10px] font-bold text-gray-500 uppercase">Table Structure</label>
+                                            <div className="bg-white p-2 rounded border space-y-2 shadow-sm">
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <button onClick={() => {
                                                         const data = activeItem.tableData || [['']];
-                                                        const cols = data[0].length;
-                                                        const newData = [...data, new Array(cols).fill('')];
-                                                        updateItem('tableData', newData);
+                                                        updateItem('tableData', [...data, new Array(data[0].length).fill('')]);
                                                     }} className="text-xs bg-gray-50 border p-1 rounded hover:bg-gray-100 flex gap-1 justify-center items-center"><Plus size={10} /> Row</button>
-
                                                     <button onClick={() => {
                                                         const data = activeItem.tableData || [['']];
-                                                        const newData = data.map(row => [...row, '']);
-                                                        updateItem('tableData', newData);
+                                                        updateItem('tableData', data.map(row => [...row, '']));
                                                     }} className="text-xs bg-gray-50 border p-1 rounded hover:bg-gray-100 flex gap-1 justify-center items-center"><Plus size={10} /> Col</button>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <button onClick={() => {
-                                                        const data = activeItem.tableData || [];
-                                                        if (data.length <= 1) return;
-                                                        updateItem('tableData', data.slice(0, -1));
-                                                    }} className="text-xs border border-red-100 text-red-500 p-1 rounded hover:bg-red-50 flex gap-1 justify-center items-center"><Trash size={10} /> Row</button>
-                                                    <button onClick={() => {
-                                                        const data = activeItem.tableData || [];
-                                                        if (data[0].length <= 1) return;
-                                                        const newData = data.map(row => row.slice(0, -1));
-                                                        updateItem('tableData', newData);
-                                                    }} className="text-xs border border-red-100 text-red-500 p-1 rounded hover:bg-red-50 flex gap-1 justify-center items-center"><Trash size={10} /> Col</button>
-                                                </div>
-                                                <div className="flex gap-2 text-xs">
-                                                    <label className="flex items-center gap-1 cursor-pointer">
-                                                        <input type="checkbox" checked={!!activeItem.styles?.tableBorder} onChange={(e) => updateItem('tableBorder', e.target.checked, true)} /> Border
-                                                    </label>
-                                                    <label className="flex items-center gap-1 cursor-pointer">
-                                                        <input type="checkbox" checked={!!activeItem.styles?.tableStriped} onChange={(e) => updateItem('tableStriped', e.target.checked, true)} /> Striped
-                                                    </label>
                                                 </div>
                                             </div>
                                         )}
 
                                         {/* LIST TOOLS */}
                                         {activeItem.type === 'list' && (
-                                            <div className="bg-white p-2 rounded border space-y-2">
+                                            <div className="bg-white p-2 rounded border space-y-2 shadow-sm">
                                                 <label className="text-[10px] font-bold text-gray-500 uppercase">List Items</label>
                                                 <textarea
-                                                    className="w-full text-xs border rounded p-1 h-24 font-mono"
+                                                    className="w-full text-xs border rounded p-1 h-24 font-mono bg-white"
                                                     value={activeItem.listItems?.join('\n') || ''}
                                                     onChange={(e) => updateItem('listItems', e.target.value.split('\n'))}
-                                                    placeholder="One item per line"
+                                                    placeholder="Item per line"
                                                 />
-                                                <div className="flex gap-2 justify-center bg-gray-50 p-1 rounded">
-                                                    <button onClick={() => updateItem('listType', 'bullet')} className={clsx("p-1 rounded", (activeItem.listType || 'bullet') === 'bullet' ? "bg-white shadow text-blue-600" : "text-gray-400")}><List size={14} /></button>
-                                                    <button onClick={() => updateItem('listType', 'number')} className={clsx("p-1 rounded", activeItem.listType === 'number' ? "bg-white shadow text-blue-600" : "text-gray-400")}><span className="text-xs font-serif font-bold">1.</span></button>
+                                                <div className="flex gap-2 bg-gray-50 p-1 rounded">
+                                                    <button onClick={() => updateItem('listType', 'bullet')} className={clsx("flex-1 p-1 rounded text-xs", (activeItem.listType || 'bullet') === 'bullet' ? "bg-white shadow text-blue-600" : "text-gray-400")}>Bullet</button>
+                                                    <button onClick={() => updateItem('listType', 'number')} className={clsx("flex-1 p-1 rounded text-xs", activeItem.listType === 'number' ? "bg-white shadow text-blue-600" : "text-gray-400")}>123</button>
                                                 </div>
                                             </div>
                                         )}
 
-
-                                        {selectedItem?.subField && (
-                                            <div className="space-y-4">
-                                                {(selectedItem.subField.includes('arabic') || selectedItem.subField.includes('name')) && (
-                                                    <>
-                                                        <StyleSlider label="Arabic Size" value={activeItem.styles?.arabicSize || settings.globalStyles.arabicSize} onChange={(v) => updateItem('arabicSize', v, true)} />
-                                                        <StyleSlider label="Arabic Spacing" min={1.0} max={4.0} unit="" value={activeItem.styles?.arabicLineHeight || settings.globalStyles.arabicLineHeight} onChange={(v) => updateItem('arabicLineHeight', v, true)} />
-                                                    </>
-                                                )}
-                                                {(selectedItem.subField.includes('urdu') || selectedItem.subField.includes('heading')) && (
-                                                    <>
-                                                        <StyleSlider label="Urdu/Heading Size" value={activeItem.styles?.urduSize || settings.globalStyles.urduSize} onChange={(v) => updateItem('urduSize', v, true)} />
-                                                        <StyleSlider label="Spacing" min={1.0} max={4.0} unit="" value={selectedItem.subField!.includes('heading') ? (activeItem.styles?.headingLineHeight || settings.globalStyles.headingLineHeight) : (activeItem.styles?.urduLineHeight || settings.globalStyles.urduLineHeight)} onChange={(v) => updateItem(selectedItem.subField!.includes('heading') ? 'headingLineHeight' : 'urduLineHeight', v, true)} />
-                                                    </>
-                                                )}
-                                                {(selectedItem.subField.includes('english') || selectedItem.subField.includes('roman')) && (
-                                                    <>
-                                                        <StyleSlider label="English Size" value={activeItem.styles?.englishSize || settings.globalStyles.englishSize} onChange={(v) => updateItem('englishSize', v, true)} />
-                                                        <StyleSlider label="English Spacing" min={1.0} max={4.0} unit="" value={activeItem.styles?.englishLineHeight || settings.globalStyles.englishLineHeight} onChange={(v) => updateItem('englishLineHeight', v, true)} />
-                                                    </>
-                                                )}
-                                                <div className="h-px bg-purple-200/50 my-2"></div>
-                                                <div>
-                                                    <label className="text-[10px] uppercase font-bold text-purple-400 mb-1 block">Alignment</label>
-                                                    <div className="flex bg-white rounded border p-1 gap-1">
-                                                        {['left', 'center', 'right', 'justify'].map((align: any) => (
-                                                            <button key={align} onClick={() => {
-                                                                const sub = selectedItem!.subField!;
-                                                                const key = sub.includes('arabic') ? 'arabicAlign' : (sub.includes('heading') && sub.includes('english')) ? 'englishAlign' : sub.includes('heading') ? 'headingAlign' : sub.includes('urdu') ? 'urduAlign' : 'englishAlign';
-                                                                updateItem(key, align, true);
-                                                            }} className={clsx("p-1 rounded flex-1 flex justify-center hover:bg-purple-50", (activeItem.styles?.[`${selectedItem!.subField!.includes('arabic') ? 'arabic' : (selectedItem!.subField!.includes('heading') && selectedItem!.subField!.includes('english')) ? 'english' : selectedItem!.subField!.includes('heading') ? 'heading' : selectedItem!.subField!.includes('urdu') ? 'urdu' : 'english'}Align`] || 'center') === align ? "bg-purple-100 text-purple-700" : "text-gray-400")}>
-                                                                {align === 'left' && <AlignLeft size={14} />}
-                                                                {align === 'center' && <AlignCenter size={14} />}
-                                                                {align === 'right' && <AlignRight size={14} />}
-                                                                {align === 'justify' && <AlignJustify size={14} />}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <div>
-                                                    <label className="text-[10px] uppercase font-bold text-purple-400 mb-1 block mt-2">Font Family</label>
-                                                    <select className="w-full text-xs p-1 border rounded" onChange={(e) => {
-                                                        const sub = selectedItem!.subField!;
-                                                        const key = sub.includes('arabic') ? 'arabicFont' : (sub.includes('heading') && sub.includes('english')) ? 'englishFont' : sub.includes('heading') ? 'urduFont' : sub.includes('urdu') ? 'urduFont' : 'englishFont';
-                                                        updateItem(key, e.target.value, true);
-                                                    }} value={activeItem.styles?.[`${selectedItem!.subField!.includes('arabic') ? 'arabic' : (selectedItem!.subField!.includes('heading') && selectedItem!.subField!.includes('english')) ? 'english' : selectedItem!.subField!.includes('heading') ? 'urdu' : selectedItem!.subField!.includes('urdu') ? 'urdu' : 'english'}Font`] || ''}>
-                                                        <option value="">Default (Global)</option>
-                                                        {selectedItem.subField?.includes('arabic') && (
-                                                            <>
-                                                                <option value="Scheherazade New">Scheherazade New</option>
-                                                                <option value="Amiri">Amiri</option>
-                                                                <option value="Cairo">Cairo</option>
-                                                                <option value="Lateef">Lateef</option>
-                                                            </>
-                                                        )}
-                                                        {(selectedItem.subField?.includes('urdu') || (selectedItem.subField?.includes('heading') && !selectedItem.subField?.includes('english'))) && (
-                                                            <>
-                                                                <option value="Noto Nastaliq Urdu">Noto Nastaliq Urdu</option>
-                                                                <option value="Gulzar">Gulzar</option>
-                                                            </>
-                                                        )}
-                                                        {(selectedItem.subField?.includes('english') || selectedItem.subField?.includes('roman') || (selectedItem.subField?.includes('heading') && selectedItem.subField?.includes('english'))) && (
-                                                            <>
-                                                                <option value="Inter">Inter</option>
-                                                                <option value="Roboto">Roboto</option>
-                                                                <option value="Lato">Lato</option>
-                                                                <option value="Merriweather">Merriweather</option>
-                                                            </>
-                                                        )}
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {!selectedItem?.subField && <div className="text-xs text-gray-500 italic">Select a part (double click) to style it.</div>}
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <div className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b pb-1">Edit Text</div>
-                                        {['arabic', 'roman', 'urdu', 'english', 'fazilat', 'fazilat_english', 'heading_urdu', 'heading_english', 'content_urdu', 'content_english', 'image_caption_urdu', 'image_caption_english', 'toc_page'].map(field => (
-                                            (activeItem[field] !== undefined || (field.includes('heading') && activeItem.type === 'heading')) && (
-                                                <div key={field}>
-                                                    <label className="block text-[10px] font-medium text-gray-500 mb-1 capitalize">{field.replace('_', ' ')}</label>
-                                                    <textarea className="w-full text-sm p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" rows={field === 'arabic' ? 3 : 2} dir={field.includes('english') || field === 'roman' ? 'ltr' : 'rtl'} value={activeItem[field] || ''} onChange={(e) => updateItem(field, e.target.value)} />
-                                                </div>
-                                            )
-                                        ))}
-
+                                        {/* IMAGE UPLOAD */}
                                         {activeItem.type === 'image' && (
-                                            <div className="pt-3 border-t">
-                                                <div className="bg-pink-50 p-3 rounded-lg border border-pink-100 mb-3">
-                                                    <label className="block text-[10px] font-bold text-pink-600 uppercase mb-2">Image Scaling</label>
-                                                    <StyleSlider
-                                                        label="Current Scale"
-                                                        min={10} max={100} unit="%"
-                                                        value={activeItem.styles?.imageWidth || 100}
-                                                        onChange={(v) => updateItem('imageWidth', v, true)}
-                                                    />
-                                                </div>
-
-                                                <label className="block text-[10px] font-bold text-pink-400 uppercase mb-2">Image File</label>
-                                                <div className="flex flex-col gap-2">
-                                                    {activeItem.image_src && (
-                                                        <img src={activeItem.image_src} alt="Preview" className="w-full h-32 object-contain border rounded bg-white shadow-inner" />
-                                                    )}
-                                                    <label className="flex items-center justify-center w-full py-2 border-2 border-dashed rounded-lg cursor-pointer hover:bg-pink-50 transition-colors border-pink-200">
-                                                        <div className="text-center flex items-center gap-2">
-                                                            <Upload size={14} className="text-pink-400" />
-                                                            <span className="text-[10px] text-pink-600 font-bold uppercase">{activeItem.image_src ? 'Replace Image' : 'Upload Image'}</span>
-                                                        </div>
-                                                        <input
-                                                            type="file"
-                                                            className="hidden"
-                                                            accept="image/*"
-                                                            onChange={(e) => {
-                                                                if (e.target.files?.[0]) {
-                                                                    const reader = new FileReader();
-                                                                    reader.onload = () => updateItem('image_src', reader.result);
-                                                                    reader.readAsDataURL(e.target.files[0]);
-                                                                }
-                                                            }}
-                                                        />
-                                                    </label>
-                                                </div>
+                                            <div className="bg-white p-2 rounded border space-y-2 shadow-sm">
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase">Image</label>
+                                                <label className="flex items-center justify-center w-full py-4 border-2 border-dashed rounded cursor-pointer hover:bg-gray-50 transition-colors">
+                                                    <div className="text-center">
+                                                        <ImageIcon size={16} className="mx-auto text-gray-400 mb-1" />
+                                                        <span className="text-[9px] text-blue-500 font-bold uppercase">Change Image</span>
+                                                    </div>
+                                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                                                        if (e.target.files?.[0]) {
+                                                            const reader = new FileReader();
+                                                            reader.onload = () => updateItem('image_src', reader.result);
+                                                            reader.readAsDataURL(e.target.files[0]);
+                                                        }
+                                                    }} />
+                                                </label>
                                             </div>
                                         )}
-                                    </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
-                                    <div className="pt-4 border-t border-gray-100">
-                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Item Actions</h4>
-                                        <div className="grid grid-cols-2 gap-2 mb-2">
-                                            <button onClick={() => moveActiveItemToPage(-1)} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700"><ArrowUp size={14} /> Prev Page</button>
-                                            <button onClick={() => moveActiveItemToPage(1)} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700"><ArrowDown size={14} /> Next Page</button>
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            <button onClick={handlePushToNext} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex flex-col items-center gap-1 text-gray-400"><ArrowDown size={14} /> Split</button>
-                                            <button onClick={handlePullToPrev} className="py-2 px-1 bg-white border hover:bg-gray-50 text-[10px] rounded flex flex-col items-center gap-1 text-gray-400"><ArrowUp size={14} /> Pull</button>
-                                            <button onClick={deleteItem} className="py-2 px-1 bg-white border border-red-200 hover:bg-red-50 text-[10px] rounded flex flex-col items-center gap-1 text-red-600"><Trash size={14} /> Delete</button>
-                                        </div>
-                                        <div className="pt-4 border-t border-gray-100">
-                                            <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Add Content</h4>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={() => addItem('section_title')} className="py-2 px-1 bg-yellow-50 border border-yellow-100 hover:bg-yellow-100 text-[10px] rounded flex items-center justify-center gap-1 text-yellow-700 font-bold"><Crown size={14} /> Sec Title</button>
-                                                <button onClick={() => addItem('heading')} className="py-2 px-1 bg-blue-50 border border-blue-100 hover:bg-blue-100 text-[10px] rounded flex items-center justify-center gap-1 text-blue-700 font-bold"><PlusCircle size={14} /> Heading</button>
-                                                <button onClick={() => addItem('dua')} className="py-2 px-1 bg-green-50 border border-green-100 hover:bg-green-100 text-[10px] rounded flex items-center justify-center gap-1 text-green-700 font-bold"><PlusCircle size={14} /> Dua/Quran</button>
-                                                <button onClick={() => addItem('text')} className="py-2 px-1 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-[10px] rounded flex items-center justify-center gap-1 text-gray-700"><PlusCircle size={14} /> Text</button>
-                                                <button onClick={() => addItem('instruction')} className="py-2 px-1 bg-orange-50 border border-orange-100 hover:bg-orange-100 text-[10px] rounded flex items-center justify-center gap-1 text-orange-700"><PlusCircle size={14} /> Instr.</button>
-                                                <button onClick={() => addItem('image')} className="py-2 px-1 bg-pink-50 border border-pink-100 hover:bg-pink-100 text-[10px] rounded flex items-center justify-center gap-1 text-pink-700 font-bold col-span-2"><ImageIcon size={14} /> Add Image</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-6">
-                                    <div className="p-8 text-center text-gray-400 border-2 border-dashed rounded-xl">
-                                        <Type className="mx-auto mb-2 opacity-50" />
-                                        <p className="text-sm italic">Select an item to edit, or add a new one below.</p>
-                                    </div>
-                                    {selectedPageId && (
-                                        <div className="bg-white p-4 rounded-xl border shadow-sm space-y-3">
-                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b pb-1">Add to Page {pages.find(p => p.id === selectedPageId)?.pageNumber}</div>
-                                            <div className="grid grid-cols-1 gap-2">
-                                                <button onClick={() => addItem('section_title')} className="py-3 px-4 bg-yellow-50 border border-yellow-200 hover:bg-yellow-100 text-xs rounded-lg flex items-center gap-3 text-yellow-700 font-bold transition-all transform hover:scale-[1.02]">
-                                                    <div className="p-2 bg-yellow-500 text-white rounded-lg"><Crown size={16} /></div>
-                                                    <div className="flex flex-col items-start leading-tight"><span>Add Section Title</span><span className="text-[10px] font-normal opacity-60">Large chapter heading</span></div>
-                                                </button>
-                                                <button onClick={() => addItem('heading')} className="py-3 px-4 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-xs rounded-lg flex items-center gap-3 text-blue-700 font-bold transition-all transform hover:scale-[1.02]">
-                                                    <div className="p-2 bg-blue-500 text-white rounded-lg"><LayoutTemplate size={16} /></div>
-                                                    <div className="flex flex-col items-start leading-tight"><span>Add Heading</span><span className="text-[10px] font-normal opacity-60">Section title</span></div>
-                                                </button>
-                                                <button onClick={() => addItem('dua')} className="py-3 px-4 bg-green-50 border border-green-200 hover:bg-green-100 text-xs rounded-lg flex items-center gap-3 text-green-700 font-bold transition-all transform hover:scale-[1.02]">
-                                                    <div className="p-2 bg-green-500 text-white rounded-lg"><PlusCircle size={16} /></div>
-                                                    <div className="flex flex-col items-start leading-tight"><span>Add Dua / Quran</span><span className="text-[10px] font-normal opacity-60">Arabic text</span></div>
-                                                </button>
-                                                <button onClick={() => addItem('text')} className="py-3 px-4 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-xs rounded-lg flex items-center gap-3 text-gray-700 font-bold transition-all transform hover:scale-[1.02]">
-                                                    <div className="p-2 bg-gray-500 text-white rounded-lg"><Type size={16} /></div>
-                                                    <div className="flex flex-col items-start leading-tight"><span>Add Text / Note</span><span className="text-[10px] font-normal opacity-60">Simple paragraph</span></div>
-                                                </button>
-                                                <button onClick={() => addItem('instruction')} className="py-3 px-4 bg-orange-50 border border-orange-200 hover:bg-orange-100 text-xs rounded-lg flex items-center gap-3 text-orange-700 font-bold transition-all transform hover:scale-[1.02]">
-                                                    <div className="p-2 bg-orange-500 text-white rounded-lg"><PlusCircle size={16} /></div>
-                                                    <div className="flex flex-col items-start leading-tight"><span>Add Instruction</span><span className="text-[10px] font-normal opacity-60">How to perform</span></div>
-                                                </button>
-                                                <button onClick={() => addItem('image')} className="py-3 px-4 bg-pink-50 border border-pink-200 hover:bg-pink-100 text-xs rounded-lg flex items-center gap-3 text-pink-700 font-bold transition-all transform hover:scale-[1.02]">
-                                                    <div className="p-2 bg-pink-500 text-white rounded-lg"><ImageIcon size={16} /></div>
-                                                    <div className="flex flex-col items-start leading-tight"><span>Add Image</span><span className="text-[10px] font-normal opacity-60">Photo or Illustration</span></div>
-                                                </button>
-                                            </div>
 
-                                            <div className="pt-6 mt-6 border-t">
-                                                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Bulk Tools</h4>
-                                                <div className="bg-gray-50 p-3 rounded-lg border">
-                                                    <label className="block text-[10px] font-bold text-gray-500 mb-2 uppercase">Bulk Add TOC Entries</label>
-                                                    <p className="text-[9px] text-gray-400 mb-2 italic leading-tight">Paste lines in "Topic [TAB] Page" format from Excel/Word.</p>
-                                                    <textarea
-                                                        className="w-full text-[10px] p-2 border rounded font-mono mb-2"
-                                                        rows={4}
-                                                        placeholder={"Morning Duas\t12\nEvening Prayers\t24"}
-                                                        value={bulkTOCText}
-                                                        onChange={(e) => setBulkTOCText(e.target.value)}
-                                                    />
-                                                    <button
-                                                        onClick={() => {
-                                                            handleBulkTOCCopyPaste(bulkTOCText);
-                                                            setBulkTOCText('');
-                                                        }}
-                                                        disabled={!bulkTOCText.trim()}
-                                                        className="w-full py-2 bg-indigo-50 border border-indigo-200 text-indigo-600 rounded text-[10px] font-bold hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    >
-                                                        Parse & Add Entries
+                    {/* SECTION: TYPOGRAPHY (STYLES) */}
+                    <div className="border-b border-gray-100">
+                        <button
+                            onClick={() => setExpandedSections(prev => prev.includes('typography') ? prev.filter(p => p !== 'typography') : [...prev, 'typography'])}
+                            className="w-full p-3 flex justify-between items-center bg-white hover:bg-gray-50 transition-colors"
+                        >
+                            <span className="flex items-center gap-2 text-xs font-bold uppercase text-gray-700"><Settings size={14} className="text-purple-500" /> Typography</span>
+                            <ChevronRight size={14} className={clsx("transition-transform text-gray-400", expandedSections.includes('typography') ? "rotate-90" : "")} />
+                        </button>
+
+                        {expandedSections.includes('typography') && (
+                            <div className="p-4 bg-gray-50/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                                {activeItem && selectedItem?.subField ? (
+                                    <>
+                                        {/* Alignment */}
+                                        <div>
+                                            <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Alignment</label>
+                                            <div className="flex bg-white rounded border p-1 gap-1 shadow-sm">
+                                                {['left', 'center', 'right', 'justify'].map((align: any) => (
+                                                    <button key={align} onClick={() => {
+                                                        const sub = selectedItem!.subField!;
+                                                        const key = sub.includes('arabic') ? 'arabicAlign' : sub.includes('urdu') || sub.includes('heading') ? 'urduAlign' : 'englishAlign';
+                                                        updateItem(`${key}`.replace('Align', 'Align'), align, true);
+                                                    }} className={clsx("flex-1 p-1 rounded flex justify-center hover:bg-purple-50 transition-colors", (activeItem.styles?.[`${selectedItem!.subField!.includes('arabic') ? 'arabic' : 'urdu'}Align`] || 'center') === align ? "bg-purple-100 text-purple-700" : "text-gray-400")}>
+                                                        {align === 'left' && <AlignLeft size={14} />}
+                                                        {align === 'center' && <AlignCenter size={14} />}
+                                                        {align === 'right' && <AlignRight size={14} />}
+                                                        {align === 'justify' && <AlignJustify size={14} />}
                                                     </button>
-                                                </div>
+                                                ))}
                                             </div>
                                         </div>
-                                    )}
+
+                                        {/* Size & Leading */}
+                                        <StyleSlider
+                                            label="Font Size"
+                                            value={activeItem.styles?.[`${selectedItem.subField.includes('arabic') ? 'arabic' : 'urdu'}Size`] || 1.2}
+                                            onChange={(v) => updateItem(`${selectedItem.subField!.includes('arabic') ? 'arabic' : 'urdu'}Size`, v, true)}
+                                        />
+                                        <StyleSlider
+                                            label="Line Height" min={1.0} max={4.0} unit=""
+                                            value={activeItem.styles?.[`${selectedItem.subField.includes('arabic') ? 'arabic' : 'urdu'}LineHeight`] || 1.6}
+                                            onChange={(v) => updateItem(`${selectedItem.subField!.includes('arabic') ? 'arabic' : 'urdu'}LineHeight`, v, true)}
+                                        />
+
+                                        {/* Advanced Tracking */}
+                                        <div className="bg-white p-2 rounded border space-y-3 shadow-sm">
+                                            <div className="text-[10px] font-bold text-purple-500 uppercase flex items-center gap-1">Advanced Spacing</div>
+                                            <StyleSlider
+                                                label="Letter Spacing" min={-2} max={10} unit="px" step={0.5}
+                                                value={activeItem.styles?.letterSpacing || 0}
+                                                onChange={(v) => updateItem('letterSpacing', v, true)}
+                                            />
+                                            <StyleSlider
+                                                label="Word Spacing" min={-5} max={20} unit="px" step={1}
+                                                value={activeItem.styles?.wordSpacing || 0}
+                                                onChange={(v) => updateItem('wordSpacing', v, true)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-[10px] uppercase font-bold text-purple-400 mb-1 block mt-2">Font Family</label>
+                                            <select className="w-full text-xs p-1 border rounded" onChange={(e) => {
+                                                const sub = selectedItem!.subField!;
+                                                const key = sub.includes('arabic') ? 'arabicFont' : (sub.includes('heading') && sub.includes('english')) ? 'englishFont' : sub.includes('heading') ? 'urduFont' : sub.includes('urdu') ? 'urduFont' : 'englishFont';
+                                                updateItem(key, e.target.value, true);
+                                            }} value={activeItem.styles?.[`${selectedItem!.subField!.includes('arabic') ? 'arabic' : (selectedItem!.subField!.includes('heading') && selectedItem!.subField!.includes('english')) ? 'english' : selectedItem!.subField!.includes('heading') ? 'urdu' : selectedItem!.subField!.includes('urdu') ? 'urdu' : 'english'}Font`] || ''}>
+                                                <option value="">Default (Global)</option>
+                                                {selectedItem.subField?.includes('arabic') && (
+                                                    <>
+                                                        <option value="Scheherazade New">Scheherazade New</option>
+                                                        <option value="Amiri">Amiri</option>
+                                                        <option value="Cairo">Cairo</option>
+                                                        <option value="Lateef">Lateef</option>
+                                                    </>
+                                                )}
+                                                {(selectedItem.subField?.includes('urdu') || (selectedItem.subField?.includes('heading') && !selectedItem.subField?.includes('english'))) && (
+                                                    <>
+                                                        <option value="Noto Nastaliq Urdu">Noto Nastaliq Urdu</option>
+                                                        <option value="Gulzar">Gulzar</option>
+                                                    </>
+                                                )}
+                                                {(selectedItem.subField?.includes('english') || selectedItem.subField?.includes('roman') || (selectedItem.subField?.includes('heading') && selectedItem.subField?.includes('english'))) && (
+                                                    <>
+                                                        <option value="Inter">Inter</option>
+                                                        <option value="Roboto">Roboto</option>
+                                                        <option value="Lato">Lato</option>
+                                                        <option value="Merriweather">Merriweather</option>
+                                                    </>
+                                                )}
+                                            </select>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-center text-gray-400 py-4">
+                                        <p className="text-xs italic">Double-click text to edit style.</p>
+                                    </div>
+                                )}
+
+                                <div className="h-px bg-gray-200 my-2" />
+
+                                {/* GLOBAL TYPOGRAPHY FALLBACK */}
+                                <div className="opacity-70">
+                                    <div className="text-[10px] font-bold text-gray-400 uppercase mb-2">Global Defaults</div>
+                                    <StyleSlider label="Global Arabic Size" isGlobal value={settings.globalStyles.arabicSize} onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, arabicSize: v } })} />
                                 </div>
-                            )}
-                        </>
-                    )}
+                            </div>
+                        )}
+                    </div>
 
-                    {/* --- TAB: TYPOGRAPHY (GLOBAL) --- */}
-                    {activeTab === 'typography' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
-                            <div>
-                                <h3 className="tex-sm font-bold text-gray-800 mb-4">Global Typography</h3>
-                                <p className="text-xs text-gray-500 mb-4">Adjusting these sliders will update all items in the book, unless individually overridden.</p>
+                    {/* SECTION: BOX & BORDER (NEW) */}
+                    <div className="border-b border-gray-100">
+                        <button
+                            onClick={() => setExpandedSections(prev => prev.includes('box') ? prev.filter(p => p !== 'box') : [...prev, 'box'])}
+                            className="w-full p-3 flex justify-between items-center bg-white hover:bg-gray-50 transition-colors"
+                        >
+                            <span className="flex items-center gap-2 text-xs font-bold uppercase text-gray-700"><Box size={14} className="text-orange-500" /> Box & Border</span>
+                            <ChevronRight size={14} className={clsx("transition-transform text-gray-400", expandedSections.includes('box') ? "rotate-90" : "")} />
+                        </button>
 
-                                <div className="bg-white p-4 rounded-lg border shadow-sm space-y-2">
-                                    <StyleSlider
-                                        label="Base Arabic Size" isGlobal
-                                        value={settings.globalStyles.arabicSize}
-                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, arabicSize: v } })}
-                                    />
-                                    <StyleSlider
-                                        label="Base Urdu Size" isGlobal
-                                        value={settings.globalStyles.urduSize}
-                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, urduSize: v } })}
-                                    />
+                        {expandedSections.includes('box') && activeItem && (
+                            <div className="p-4 bg-gray-50/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                                {/* Border Style */}
+                                <div>
+                                    <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Border Style</label>
+                                    <select
+                                        className="w-full text-xs p-1.5 border rounded bg-white shadow-sm"
+                                        value={activeItem.styles?.borderStyle || 'solid'}
+                                        onChange={(e) => updateItem('borderStyle', e.target.value, true)}
+                                    >
+                                        <option value="solid">Solid</option>
+                                        <option value="dashed">Dashed</option>
+                                        <option value="dotted">Dotted</option>
+                                        <option value="double">Double</option>
+                                    </select>
+                                </div>
 
-                                    <StyleSlider
-                                        label="Base English Size" isGlobal
-                                        value={settings.globalStyles.englishSize}
-                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, englishSize: v } })}
-                                    />
-                                    <StyleSlider
-                                        label="Base Heading Size" isGlobal
-                                        value={settings.globalStyles.headingSize}
-                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, headingSize: v } })}
-                                    />
+                                <StyleSlider
+                                    label="Border Width" min={0} max={10} unit="px"
+                                    value={activeItem.styles?.borderWidth || 0}
+                                    onChange={(v) => updateItem('borderWidth', v, true)}
+                                />
+                                <StyleSlider
+                                    label="Border Radius" min={0} max={50} unit="px" step={2}
+                                    value={activeItem.styles?.borderRadius || 0}
+                                    onChange={(v) => updateItem('borderRadius', v, true)}
+                                />
+                                <StyleSlider
+                                    label="Padding" min={0} max={50} unit="px" step={2}
+                                    value={activeItem.styles?.padding || 0}
+                                    onChange={(v) => updateItem('padding', v, true)}
+                                />
 
-                                    <div className="h-px bg-gray-100 my-4"></div>
-                                    <h4 className="text-[10px] font-bold text-blue-400 uppercase mb-3">Line Spacing (Universal)</h4>
-
-                                    <StyleSlider
-                                        label="Arabic Line Height" isGlobal min={1.0} max={4.0} unit=""
-                                        value={settings.globalStyles.arabicLineHeight}
-                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, arabicLineHeight: v } })}
-                                    />
-                                    <StyleSlider
-                                        label="Urdu Line Height" isGlobal min={1.0} max={4.0} unit=""
-                                        value={settings.globalStyles.urduLineHeight}
-                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, urduLineHeight: v } })}
-                                    />
-                                    <StyleSlider
-                                        label="English Line Height" isGlobal min={1.0} max={4.0} unit=""
-                                        value={settings.globalStyles.englishLineHeight}
-                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, englishLineHeight: v } })}
-                                    />
-                                    <StyleSlider
-                                        label="Heading Line Height" isGlobal min={1.0} max={4.0} unit=""
-                                        value={settings.globalStyles.headingLineHeight}
-                                        onChange={(v) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, headingLineHeight: v } })}
-                                    />
-
-                                    <div className="pt-2 border-t mt-2">
-                                        <label className="text-xs font-bold block mb-1">Global Arabic Font</label>
-                                        <select
-                                            className="w-full text-xs border rounded p-1"
-                                            value={settings.globalStyles.arabicFont}
-                                            onChange={(e) => setSettings({ ...settings, globalStyles: { ...settings.globalStyles, arabicFont: e.target.value } })}
-                                        >
-                                            <option value="Scheherazade New">Scheherazade New</option>
-                                            <option value="Amiri">Amiri</option>
-                                            <option value="Cairo">Cairo</option>
-                                            <option value="Lateef">Lateef</option>
-                                        </select>
+                                <div>
+                                    <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Background Color</label>
+                                    <div className="flex gap-2 items-center">
+                                        <input type="color" className="h-6 w-8 p-0 border rounded cursor-pointer" value={activeItem.styles?.backgroundColor || '#ffffff'} onChange={(e) => updateItem('backgroundColor', e.target.value, true)} />
+                                        <button onClick={() => updateItem('backgroundColor', undefined, true)} className="text-[10px] text-red-400 hover:text-red-600">Clear</button>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
-                    {/* --- TAB: LAYOUT --- */}
-                    {activeTab === 'layout' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
-                            <div>
-                                <h3 className="text-sm font-bold text-gray-800 mb-2">Paper & Layout</h3>
-                                <div className="grid grid-cols-2 gap-2 mb-4">
-                                    {['A4', 'A5'].map(size => (
-                                        <button
-                                            key={size}
-                                            onClick={() => setSettings({ ...settings, pageSize: size === 'A4' ? { width: 210, height: 297, name: 'A4' } : { width: 148, height: 210, name: 'A5' } })}
-                                            className={clsx("py-2 text-xs border rounded transition-colors", settings.pageSize.name === size ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-50')}
-                                        >
-                                            {size}
-                                        </button>
-                                    ))}
+                    {/* SECTION: LAYOUT & ASSETS */}
+                    <div className="border-b border-gray-100">
+                        <button
+                            onClick={() => setExpandedSections(prev => prev.includes('layout') ? prev.filter(p => p !== 'layout') : [...prev, 'layout'])}
+                            className="w-full p-3 flex justify-between items-center bg-white hover:bg-gray-50 transition-colors"
+                        >
+                            <span className="flex items-center gap-2 text-xs font-bold uppercase text-gray-700"><ImageIcon size={14} className="text-green-500" /> Page & Assets</span>
+                            <ChevronRight size={14} className={clsx("transition-transform text-gray-400", expandedSections.includes('layout') ? "rotate-90" : "")} />
+                        </button>
+
+                        {expandedSections.includes('layout') && (
+                            <div className="p-4 bg-gray-50/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                                {/* Page Bg */}
+                                <div>
+                                    <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Page Background</label>
+                                    <label className="flex items-center justify-center w-full py-3 border-2 border-dashed rounded bg-white hover:bg-gray-50 cursor-pointer">
+                                        <span className="text-[10px] text-gray-500"><Upload size={12} className="inline mr-1" /> Upload Image</span>
+                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files && handleImageUpload('pageBackgroundImage', e.target.files[0])} />
+                                    </label>
                                 </div>
 
-                                <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase">Margins (px)</h4>
-                                <div className="grid grid-cols-2 gap-3 mb-6">
+                                {/* Margins */}
+                                <div className="grid grid-cols-2 gap-2">
                                     {['top', 'bottom', 'left', 'right'].map(m => (
                                         <div key={m}>
-                                            <label className="block text-[10px] text-gray-400 uppercase">{m}</label>
+                                            <label className="text-[9px] uppercase font-bold text-gray-400">{m}</label>
                                             <input
-                                                type="number"
+                                                type="number" className="w-full text-xs p-1 border rounded"
                                                 // @ts-ignore
                                                 value={settings.margins[m]}
                                                 // @ts-ignore
                                                 onChange={(e) => setSettings({ ...settings, margins: { ...settings.margins, [m]: parseInt(e.target.value) || 0 } })}
-                                                className="w-full text-xs p-1 border rounded"
                                             />
                                         </div>
                                     ))}
-                                    <div>
-                                        <label className="block text-[10px] text-gray-400 uppercase">Heading Top Offset</label>
-                                        <input
-                                            type="number"
-                                            value={settings.sectionTitleOffset}
-                                            onChange={(e) => setSettings({ ...settings, sectionTitleOffset: parseInt(e.target.value) || 0 })}
-                                            className="w-full text-xs p-1 border rounded"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-[10px] text-gray-400 uppercase mb-1">Page Background Color</label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="color"
-                                                value={pages.find(p => p.id === selectedPageId)?.backgroundColor || '#ffffff'}
-                                                onChange={(e) => {
-                                                    const newPages = pages.map(p => p.id === selectedPageId ? { ...p, backgroundColor: e.target.value } : p);
-                                                    updatePagesWithHistory(newPages);
-                                                }}
-                                                className="w-10 h-8 rounded border p-0 cursor-pointer"
-                                            />
-                                            <button
-                                                onClick={() => {
-                                                    const newPages = pages.map(p => p.id === selectedPageId ? { ...p, backgroundColor: '#ffffff' } : p);
-                                                    updatePagesWithHistory(newPages);
-                                                }}
-                                                className="text-[10px] text-gray-400 hover:text-gray-600 font-bold uppercase"
-                                            >
-                                                Reset to White
-                                            </button>
-                                        </div>
-                                    </div>
                                 </div>
 
-                                <div className="pt-4 border-t space-y-4">
-                                    <h3 className="text-sm font-bold text-gray-800 mb-2">Page Actions</h3>
-
-                                    <div className="space-y-2">
-                                        <button
-                                            onClick={deletePage}
-                                            disabled={!selectedPageId || pages.length === 0}
-                                            className="w-full py-2 bg-red-50 border border-red-200 text-red-600 rounded text-xs font-bold hover:bg-red-100 flex items-center justify-center gap-2"
-                                        >
-                                            <Trash size={14} /> Delete Selected Page {selectedPageId && `(${pages.find(p => p.id === selectedPageId)?.pageNumber})`}
-                                        </button>
-
-                                        <div className="flex gap-2">
-                                            <input
-                                                id="deletePageNum"
-                                                type="number"
-                                                placeholder="Page #"
-                                                className="w-20 text-xs p-1 border rounded"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        const num = parseInt((e.target as HTMLInputElement).value);
-                                                        if (num) deletePageByNumber(num);
-                                                    }
-                                                }}
-                                            />
-                                            <button
-                                                onClick={() => {
-                                                    const input = document.getElementById('deletePageNum') as HTMLInputElement;
-                                                    const num = parseInt(input.value);
-                                                    if (num) deletePageByNumber(num);
-                                                }}
-                                                className="flex-1 py-1 px-2 border border-red-200 text-red-600 rounded text-[10px] font-bold hover:bg-red-50"
-                                            >
-                                                Delete Page By #
-                                            </button>
-                                        </div>
-
-                                        <div className="h-px bg-gray-100 my-4"></div>
-                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Move Selected Page</h4>
-                                        <div className="flex gap-2">
-                                            <input
-                                                id="movePageTarget"
-                                                type="number"
-                                                placeholder="Target #"
-                                                className="w-20 text-xs p-1 border rounded"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        const num = parseInt((e.target as HTMLInputElement).value);
-                                                        if (num) movePage(num);
-                                                    }
-                                                }}
-                                            />
-                                            <button
-                                                onClick={() => {
-                                                    const input = document.getElementById('movePageTarget') as HTMLInputElement;
-                                                    const num = parseInt(input.value);
-                                                    if (num) movePage(num);
-                                                }}
-                                                className="flex-1 py-1 px-2 bg-blue-50 border border-blue-200 text-blue-600 rounded text-[10px] font-bold hover:bg-blue-100 flex items-center justify-center gap-1"
-                                            >
-                                                <ArrowUpDown size={12} /> Move to Position
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* --- TAB: ASSETS --- */}
-                    {activeTab === 'assets' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
-                            <div className="border-t pt-4">
-                                <h3 className="text-sm font-bold text-gray-800 mb-3">Backgrounds</h3>
-
-                                <div className="mb-4">
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Page Background</label>
-                                    <label className="flex items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                        <div className="text-center">
-                                            <Upload className="mx-auto h-4 w-4 text-gray-400" />
-                                            <span className="text-[10px] text-gray-500">Upload Image</span>
-                                        </div>
-                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files && handleImageUpload('pageBackgroundImage', e.target.files[0])} />
-                                    </label>
-                                    {settings.pageBackgroundImage && <button onClick={() => setSettings({ ...settings, pageBackgroundImage: undefined })} className="text-[10px] text-red-500 mt-1 hover:underline">Remove Background</button>}
-                                </div>
-
+                                {/* Page Number Style */}
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Heading Background</label>
-                                    <label className="flex items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                        <div className="text-center">
-                                            <Upload className="mx-auto h-4 w-4 text-gray-400" />
-                                            <span className="text-[10px] text-gray-500">Upload Image</span>
-                                        </div>
-                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files && handleImageUpload('headingBackgroundImage', e.target.files[0])} />
-                                    </label>
-                                    {settings.headingBackgroundImage && <button onClick={() => setSettings({ ...settings, headingBackgroundImage: undefined })} className="text-[10px] text-red-500 mt-1 hover:underline">Remove Background</button>}
+                                    <label className="text-[10px] uppercase font-bold text-gray-500 mb-1 block">Page Number Style</label>
+                                    <select
+                                        className="w-full text-xs p-1 border rounded bg-white"
+                                        value={settings.pageNumberStyle || 'urdu'}
+                                        onChange={(e) => setSettings({ ...settings, pageNumberStyle: e.target.value as any })}
+                                    >
+                                        <option value="urdu">Urdu (۱, ۲, ۳)</option>
+                                        <option value="arabic">Arabic (1, 2, 3)</option>
+                                        <option value="roman">Roman (i, ii, iii)</option>
+                                    </select>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
 
                 {/* Footer Actions */}
